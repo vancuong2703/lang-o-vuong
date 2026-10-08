@@ -43,6 +43,11 @@ export function parcelCenter(parcelX: number, parcelY: number): [number, number]
   return [parcelX * PARCEL_PITCH + PARCEL_PLOTS / 2, parcelY * PARCEL_PITCH + PARCEL_PLOTS / 2]
 }
 
+/** World (x, z) of the corner of quadrant q (0..3) of a parcel: (q % 2) * 2, floor(q / 2) * 2 inside it. */
+export function quadrantOrigin(parcelX: number, parcelY: number, quadrant: number): [number, number] {
+  return [parcelX * PARCEL_PITCH + (quadrant % 2) * 2, parcelY * PARCEL_PITCH + Math.floor(quadrant / 2) * 2]
+}
+
 /** Index 0..15 of a plot inside its parcel (row by row). */
 export function plotIndex(plotX: number, plotY: number): number {
   return plotY * PARCEL_PLOTS + plotX

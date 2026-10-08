@@ -29,11 +29,23 @@ export interface PlotRow {
   ready_at: string | null
 }
 
+/** One of MY structures, with live details (from player_state). */
+export interface StructureState {
+  id: number
+  parcel_id: number
+  quadrant: number
+  type_id: string
+  level: number
+  animals: { id: number; fed_at: string | null; ready_at: string | null }[]
+  jobs: { id: number; recipe_id: string; start_at: string; ready_at: string }[]
+}
+
 export interface PlayerState {
   profile: Profile
   barn_capacity: number
   inventory: Record<string, number>
   plots: PlotRow[]
+  structures: StructureState[]
   server_now: string
   harvested?: number
   level_up?: boolean
@@ -42,10 +54,11 @@ export interface PlayerState {
   target?: number | null
 }
 
-export type UpgradeKind = 'house' | 'barn' | 'tool' | 'fertility'
+export type UpgradeKind = 'house' | 'barn' | 'tool' | 'fertility' | 'structure'
 
 export interface UpgradeLevelRow {
-  kind: UpgradeKind
+  /** 'house' | 'barn' | 'tool' | 'fertility' or a structure type id such as 'chicken_pen'. */
+  kind: string
   level: number
   cost: number
   required_player_level: number
@@ -107,9 +120,66 @@ export interface LeaderboardEntry {
   weekly_xp?: number
 }
 
-/** get_world compact rows (see migration 20261008130000). */
+/** get_world compact rows (see migrations 20261008130000 and 20261008190000). */
 export type ParcelTuple = [number, number, number, string, boolean, number | null, string | null, number]
 export type PlotTuple = [number, number, string, number, number, string | null, string | null, string | null]
+/** [id, parcel_id, quadrant, type_id, level, animal_count] */
+export type StructureTuple = [number, number, number, string, number, number]
+
+/** Any structure in the village, as other players see it. */
+export interface WorldStructure {
+  id: number
+  parcel_id: number
+  quadrant: number
+  type_id: string
+  level: number
+  animal_count: number
+}
+
+export interface ItemRow {
+  id: string
+  name_vi: string
+  name_en: string
+  category: 'crop' | 'feed' | 'animal_product' | 'processed' | 'rare'
+  base_price: number
+  sellable: boolean
+  unlock_level: number
+  sort_order: number
+}
+
+export interface StructureTypeRow {
+  id: string
+  name_vi: string
+  kind: 'pen' | 'processor'
+  build_price: number
+  unlock_level: number
+  max_per_player: number
+  sort_order: number
+}
+
+export interface AnimalTypeRow {
+  id: string
+  name_vi: string
+  pen_type_id: string
+  unlock_level: number
+  price: number
+  feed_item_id: string
+  product_item_id: string
+  cycle_seconds: number
+  xp: number
+}
+
+export interface RecipeRow {
+  id: string
+  structure_type_id: string
+  output_item_id: string
+  output_qty: number
+  seconds: number
+  unlock_level: number
+  xp: number
+  sort_order: number
+  recipe_inputs: { item_id: string; qty: number }[]
+}
 
 export interface PlayerInfo {
   id: string
@@ -124,6 +194,7 @@ export interface WorldPayload {
   parcels: ParcelTuple[]
   players: PlayerInfo[]
   plots: PlotTuple[]
+  structures: StructureTuple[]
   server_now: string
 }
 
@@ -167,6 +238,38 @@ export const api = {
   getOrders: () => rpc<OrdersPayload>('get_orders'),
   fulfillOrder: (orderId: number) => rpc<PlayerState & { orders: OrdersPayload }>('fulfill_order', { p_order_id: orderId }),
   skipOrder: (orderId: number) => rpc<OrdersPayload>('skip_order', { p_order_id: orderId }),
+  buildStructure: (parcelId: number, quadrant: number, typeId: string) =>
+    rpc<PlayerState & { built_structure_id: number }>('build_structure', { p_parcel_id: parcelId, p_quadrant: quadrant, p_type_id: typeId }),
+  buyAnimal: (structureId: number) => rpc<PlayerState>('buy_animal', { p_structure_id: structureId }),
+  feedAnimals: (structureId: number) => rpc<PlayerState & { fed: number; still_hungry: number }>('feed_animals', { p_structure_id: structureId }),
+  collectAnimals: (structureId: number) => rpc<PlayerState & { collected: number }>('collect_animals', { p_structure_id: structureId }),
+  startProduction: (structureId: number, recipeId: string) =>
+    rpc<PlayerState>('start_production', { p_structure_id: structureId, p_recipe_id: recipeId }),
+  collectProduction: (structureId: number) => rpc<PlayerState & { collected: number }>('collect_production', { p_structure_id: structureId }),
+
+  async loadItems(): Promise<ItemRow[]> {
+    const { data, error } = await supabase.from('items').select('id, name_vi, name_en, category, base_price, sellable, unlock_level, sort_order')
+    if (error) throw new GameError(error.message)
+    return data as ItemRow[]
+  },
+
+  async loadStructureTypes(): Promise<StructureTypeRow[]> {
+    const { data, error } = await supabase.from('structure_types').select('*').order('sort_order')
+    if (error) throw new GameError(error.message)
+    return data as StructureTypeRow[]
+  },
+
+  async loadAnimalTypes(): Promise<AnimalTypeRow[]> {
+    const { data, error } = await supabase.from('animal_types').select('*')
+    if (error) throw new GameError(error.message)
+    return data as AnimalTypeRow[]
+  },
+
+  async loadRecipes(): Promise<RecipeRow[]> {
+    const { data, error } = await supabase.from('recipes').select('*, recipe_inputs(item_id, qty)').order('sort_order')
+    if (error) throw new GameError(error.message)
+    return data as RecipeRow[]
+  },
 
   async loadUpgradeLevels(): Promise<UpgradeLevelRow[]> {
     const { data, error } = await supabase.from('upgrade_levels').select('kind, level, cost, required_player_level, value').order('level')
@@ -186,19 +289,26 @@ export const api = {
     }))
   },
 
-  /** One parcel and its plots (realtime refresh, ROADMAP 4.7). */
-  async getParcelSnapshot(parcelId: number): Promise<{ parcel: ParcelRow | null; plots: PlotRow[] }> {
-    const [parcel, plots] = await Promise.all([
+  /** One parcel with its plots and structures (realtime refresh, ROADMAP 4.7). */
+  async getParcelSnapshot(parcelId: number): Promise<{ parcel: ParcelRow | null; plots: PlotRow[]; structures: WorldStructure[] }> {
+    const [parcel, plots, structures] = await Promise.all([
       supabase
         .from('parcels')
         .select('id, x, y, zone, is_home_slot, priority_slot_id, owner_id, fertility_level')
         .eq('id', parcelId)
         .maybeSingle(),
       supabase.from('plots').select('id, parcel_id, lx, ly, crop_item_id, planted_at, ready_at').eq('parcel_id', parcelId),
+      supabase.from('structures').select('id, parcel_id, quadrant, type_id, level, animals(count)').eq('parcel_id', parcelId),
     ])
     if (parcel.error) throw new GameError(parcel.error.message)
     if (plots.error) throw new GameError(plots.error.message)
-    return { parcel: parcel.data as ParcelRow | null, plots: (plots.data ?? []) as PlotRow[] }
+    if (structures.error) throw new GameError(structures.error.message)
+    type Row = Omit<WorldStructure, 'animal_count'> & { animals: { count: number }[] }
+    return {
+      parcel: parcel.data as ParcelRow | null,
+      plots: (plots.data ?? []) as PlotRow[],
+      structures: ((structures.data ?? []) as unknown as Row[]).map(({ animals, ...s }) => ({ ...s, animal_count: animals[0]?.count ?? 0 })),
+    }
   },
 
   async getPlayer(id: string): Promise<PlayerInfo | null> {

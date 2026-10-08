@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { LandParcel, LandWorld, Zone } from '../logic/land'
-import { api, type PlayerInfo, type PlotRow } from '../services/api'
+import { api, type PlayerInfo, type PlotRow, type WorldStructure } from '../services/api'
 
 // The whole village: every parcel, every player, and the plots of OTHER players.
 // My own plots live in gameStore (they come back from every RPC I call).
@@ -22,6 +22,8 @@ interface WorldState {
   players: Record<string, PlayerInfo>
   /** Plots of other players, grouped by parcel id. */
   plotsByParcel: Record<number, PlotRow[]>
+  /** Structures of every player, grouped by parcel id (mine are drawn from gameStore). */
+  structuresByParcel: Record<number, WorldStructure[]>
   selectedParcelId: number | null
   flyTarget: FlyTarget | null
   neighboursOpen: boolean
@@ -50,6 +52,7 @@ export const useWorld = create<WorldState>((set, get) => ({
   idByXY: {},
   players: {},
   plotsByParcel: {},
+  structuresByParcel: {},
   selectedParcelId: null,
   flyTarget: null,
   neighboursOpen: false,
@@ -68,12 +71,16 @@ export const useWorld = create<WorldState>((set, get) => ({
     for (const [id, parcel_id, , lx, ly, crop_item_id, planted_at, ready_at] of world.plots) {
       ;(plotsByParcel[parcel_id] ??= []).push({ id, parcel_id, lx, ly, crop_item_id, planted_at, ready_at })
     }
+    const structuresByParcel: Record<number, WorldStructure[]> = {}
+    for (const [id, parcel_id, quadrant, type_id, level, animal_count] of world.structures ?? []) {
+      ;(structuresByParcel[parcel_id] ??= []).push({ id, parcel_id, quadrant, type_id, level, animal_count })
+    }
     const players = Object.fromEntries(world.players.map((p) => [p.id, p]))
-    set({ loaded: true, parcels, idByXY, players, plotsByParcel })
+    set({ loaded: true, parcels, idByXY, players, plotsByParcel, structuresByParcel })
   },
 
   refreshParcel: async (parcelId) => {
-    const { parcel: row, plots } = await api.getParcelSnapshot(parcelId)
+    const { parcel: row, plots, structures } = await api.getParcelSnapshot(parcelId)
     if (!row) return undefined
     const parcel: Parcel = {
       id: row.id,
@@ -94,6 +101,7 @@ export const useWorld = create<WorldState>((set, get) => ({
       parcels: { ...s.parcels, [parcelId]: parcel },
       idByXY: { ...s.idByXY, [key(parcel.x, parcel.y)]: parcel.id },
       plotsByParcel: { ...s.plotsByParcel, [parcelId]: plots },
+      structuresByParcel: { ...s.structuresByParcel, [parcelId]: structures },
       players,
     }))
     return parcel

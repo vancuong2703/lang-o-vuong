@@ -19,6 +19,11 @@ const MESSAGES: Record<string, string> = {
   TOOL_AREA: 'Công cụ chưa đủ cấp để làm cả vùng này',
   MAX_LEVEL: 'Đã đạt cấp tối đa',
   ALREADY_CLAIMED: 'Bạn đã nhận phần này rồi',
+  STRUCTURE_LIMIT: 'Bạn đã có công trình loại này rồi',
+  QUADRANT_TAKEN: 'Góc này không còn chỗ để xây',
+  PEN_FULL: 'Chuồng đã đầy, hãy nâng cấp chuồng',
+  NOTHING_TO_DO: 'Không có con nào đang đói',
+  QUEUE_FULL: 'Hàng đợi của xưởng đã đầy',
   QUEST_EXPIRED: 'Việc này đã hết hạn, hãy làm việc của hôm nay',
 }
 

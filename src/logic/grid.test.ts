@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chunkOf, plotFromIndex, plotIndex, plotToWorld, quadrantOf, worldToPlot } from './grid'
+import { chunkOf, plotFromIndex, plotIndex, plotToWorld, quadrantOf, quadrantOrigin, worldToPlot } from './grid'
 
 describe('worldToPlot', () => {
   it('finds the plot at the center of parcel (0,0) plot (0,0)', () => {
@@ -49,6 +49,17 @@ describe('plot index and quadrant', () => {
     expect(quadrantOf(3, 1)).toBe(1)
     expect(quadrantOf(1, 2)).toBe(2)
     expect(quadrantOf(2, 3)).toBe(3)
+  })
+
+  it('places quadrant corners inside the parcel, matching quadrantOf', () => {
+    expect(quadrantOrigin(2, 3, 0)).toEqual([10, 15])
+    expect(quadrantOrigin(2, 3, 3)).toEqual([12, 17])
+    // the plot at the corner of each quadrant maps back to that quadrant
+    for (let q = 0; q < 4; q++) {
+      const [x, z] = quadrantOrigin(0, 0, q)
+      const plot = worldToPlot(x + 0.5, z + 0.5)!
+      expect(quadrantOf(plot.plotX, plot.plotY)).toBe(q)
+    }
   })
 
   it('maps parcels to chunks', () => {

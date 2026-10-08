@@ -41,6 +41,16 @@ Phase 4 (GĐ4) done:
   `fulfill_order`, `skip_order`. Quest progress comes from TRIGGERS on `coin_ledger` and `player_stats` (do not
   call progress from RPCs). Cron job `cleanup-coin-ledger` keeps 30 days of ledger.
 
+Phase 5 (GĐ5) done: animals & processing.
+- Config: `structure_types`, `animal_types`, `recipes` + `recipe_inputs`; structure levels in `upgrade_levels`
+  (kind = structure type id; pens: value = capacity, processors: value = queue slots).
+- State: `structures` (one per 2x2 quadrant, its 4 plots are deleted), `animals` (fed_at/ready_at), `production_jobs`.
+- RPCs: `build_structure`, `buy_animal`, `feed_animals`, `collect_animals`, `start_production`, `collect_production`,
+  `upgrade('structure', id)`. `player_state.structures` (mine, with animals & jobs); `get_world.structures` (all).
+- 3D: `src/game/structures/` (instanced per type, `ReadyBubbles`), `src/game/animals/` (instanced, walking loops).
+- UI: `BuildPanel` (pick type, then an empty corner), `StructurePanel` (pen / processor), barn grouped by category.
+- Zustand selectors must return stable values: never `?? []` inside a selector (use a module-level empty constant).
+
 Setting & visuals (GDD 1.2a, 6.7, 10.1): landlord family in an old Vietnamese village. Wording: "điền trang", "mảnh ruộng";
 land titles in `src/logic/titles.ts`. Fixed roads `src/game/world/Roads.tsx`; buildings/trees are merged vertex-color
 geometries (`src/game/shapes.ts`, `src/game/structures/houseGeometry.ts`, `src/game/world/Trees.tsx`).

@@ -11,8 +11,11 @@ import { Lotus } from './world/Lotus'
 import { TownSquare } from './world/TownSquare'
 import { SelectionMarkers } from './world/SelectionMarkers'
 import { Houses } from './structures/Houses'
+import { Structures } from './structures/Structures'
+import { ReadyBubbles } from './structures/ReadyBubbles'
+import { Animals } from './animals/Animals'
 import { CHUNKS_PER_SIDE, MAP_CENTER, MAP_WORLD } from './world/mapConstants'
-import { PARCEL_PITCH, worldToPlot } from '../logic/grid'
+import { PARCEL_PITCH, quadrantOf, worldToPlot } from '../logic/grid'
 import { useGame } from '../state/gameStore'
 import { parcelAt, useWorld } from '../state/worldStore'
 
@@ -138,6 +141,14 @@ function PickPlane() {
       return
     }
     if (coord && parcel.ownerId && parcel.ownerId === game.profile?.id) {
+      // My pen or processor on this quadrant -> open its panel; otherwise plant / harvest.
+      const quadrant = quadrantOf(coord.plotX, coord.plotY)
+      const structure = game.structures.find((s) => s.parcel_id === parcel.id && s.quadrant === quadrant)
+      if (structure) {
+        world.selectParcel(null)
+        game.openStructure(structure.id)
+        return
+      }
       game.tapPlot(parcel.id, coord.plotX, coord.plotY)
       return
     }
@@ -180,6 +191,9 @@ export function GameCanvas() {
       ))}
       <Roads />
       <Houses />
+      <Structures />
+      <Animals />
+      <ReadyBubbles />
       <Trees />
       <Lotus />
       <TownSquare />

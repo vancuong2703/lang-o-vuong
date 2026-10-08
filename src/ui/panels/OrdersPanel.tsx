@@ -13,7 +13,7 @@ const SLOTS = [0, 1, 2, 3, 4, 5]
 export function OrdersPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const inventory = useGame((s) => s.inventory)
   const showToast = useGame((s) => s.showToast)
-  const cropsById = useCatalog((s) => s.cropsById)
+  const itemsById = useCatalog((s) => s.itemsById)
   const now = useClock((s) => s.now)
   const [data, setData] = useState<OrdersPayload | null>(null)
   const [busy, setBusy] = useState(false)
@@ -99,15 +99,12 @@ export function OrdersPanel({ open, onClose }: { open: boolean; onClose: () => v
                 <div key={slot} className="rounded-xl bg-white p-3">
                   <ul className="space-y-1 text-sm">
                     {order.requirements.map((r) => {
-                      const crop = cropsById[r.item_id]
+                      const item = itemsById[r.item_id]
                       const have = inventory[r.item_id] ?? 0
                       return (
                         <li key={r.item_id} className="flex items-center gap-1.5">
-                          <span
-                            className="inline-block h-3 w-3 shrink-0 rounded-full"
-                            style={{ background: crop?.produceColor ?? '#ccc' }}
-                          />
-                          <span className="flex-1">{crop?.nameVi ?? r.item_id}</span>
+                          <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ background: item?.color ?? '#ccc' }} />
+                          <span className="flex-1">{item?.nameVi ?? r.item_id}</span>
                           <span className={have >= r.qty ? 'font-semibold text-[#4E9F3D]' : 'font-semibold text-[#C0473A]'}>
                             {have}/{r.qty}
                           </span>

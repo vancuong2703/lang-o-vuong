@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { api, type PlayerState, type PlotRow, type Profile, type UpgradeKind } from '../services/api'
+import { api, type PlayerState, type PlotRow, type Profile, type StructureState, type UpgradeKind } from '../services/api'
 import { supabase } from '../services/supabase'
 import { errorMessage } from '../ui/errorMessages'
 import { useCatalog } from './catalogStore'
@@ -23,6 +23,10 @@ interface GameState {
   status: GameStatus
   profile: Profile | null
   plots: PlotRow[]
+  /** My pens and processors, with animals and production jobs. */
+  structures: StructureState[]
+  /** Structure whose panel is open (pen or processor). */
+  openStructureId: number | null
   inventory: Record<string, number>
   barnCapacity: number
   selectedSeed: string
@@ -47,6 +51,7 @@ interface GameState {
   sell: (itemId: string, qty: number) => Promise<void>
   selectSeed: (cropId: string) => void
   setBarnOpen: (open: boolean) => void
+  openStructure: (id: number | null) => void
   clearSelection: () => void
   showToast: (text: string, kind?: Toast['kind']) => void
 }
@@ -67,6 +72,7 @@ async function call<T extends PlayerState>(fn: () => Promise<T | null>): Promise
     useGame.setState({
       profile: state.profile,
       plots: state.plots,
+      structures: state.structures ?? [],
       inventory: state.inventory,
       barnCapacity: state.barn_capacity,
     })
@@ -78,6 +84,8 @@ export const useGame = create<GameState>()((set, get) => ({
   status: 'loading',
   profile: null,
   plots: [],
+  structures: [],
+  openStructureId: null,
   inventory: {},
   barnCapacity: 75,
   selectedSeed: localStorage.getItem('selectedSeed') ?? 'bok_choy',
@@ -113,7 +121,7 @@ export const useGame = create<GameState>()((set, get) => ({
     const { data } = supabase.auth.onAuthStateChange((event) => {
       // Do not await Supabase calls inside this callback (supabase-js docs); defer them.
       if (event === 'SIGNED_IN' && get().status === 'signed_out') setTimeout(() => void load(), 0)
-      if (event === 'SIGNED_OUT') set({ status: 'signed_out', profile: null, plots: [], inventory: {} })
+      if (event === 'SIGNED_OUT') set({ status: 'signed_out', profile: null, plots: [], structures: [], inventory: {}, openStructureId: null })
     })
 
     // Realtime keeps nearby parcels fresh; a full reload every 10 minutes and when the tab comes back
@@ -231,7 +239,7 @@ export const useGame = create<GameState>()((set, get) => ({
       const coinsBefore = get().profile?.coins ?? 0
       const state = await call(() => api.sell(itemId, qty))
       const earned = (state?.profile.coins ?? coinsBefore) - coinsBefore
-      const name = useCatalog.getState().cropsById[itemId]?.nameVi ?? itemId
+      const name = useCatalog.getState().itemsById[itemId]?.nameVi ?? itemId
       get().showToast(`Đã bán ${qty} ${name}: +${earned} xu`, 'success')
     } catch (err) {
       get().showToast(errorMessage(err), 'error')
@@ -275,6 +283,7 @@ export const useGame = create<GameState>()((set, get) => ({
     set({ selectedSeed: cropId })
   },
   setBarnOpen: (open) => set({ barnOpen: open }),
+  openStructure: (id) => set({ openStructureId: id, selectedPlotId: null }),
   clearSelection: () => set({ selectedPlotId: null }),
   showToast: (text, kind = 'info') => set({ toast: { id: ++toastId, text, kind } }),
 }))
