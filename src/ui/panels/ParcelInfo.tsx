@@ -11,15 +11,15 @@ const ZONE_LABEL = {
   lake: 'Hồ nước',
   forest: 'Rừng',
   alluvial: 'Đất phù sa (sắp đấu giá)',
-  normal: 'Đất trống',
+  normal: 'Ruộng hoang',
 }
 
 const BLOCK_TEXT: Record<BuyBlock, string> = {
   ALREADY_OWNED: 'Đã có chủ',
   NOT_BUYABLE: 'Không bán khu này',
-  NOT_ADJACENT: 'Chỉ mua được ô kề bên đất của bạn',
+  NOT_ADJACENT: 'Chỉ mua được ruộng liền kề ruộng nhà mình',
   PRIORITY_ZONE: 'Vùng ưu tiên của người khác',
-  LAND_LIMIT: 'Hãy nâng cấp nhà để có thêm đất',
+  LAND_LIMIT: 'Hãy nâng cấp nhà để có thêm ruộng',
   NOT_ENOUGH_COINS: 'Chưa đủ xu',
 }
 
@@ -42,32 +42,32 @@ export function ParcelInfo() {
 
   let body: ReactNode
   if (mine) {
-    body = <p className="text-sm">Đất của bạn{parcel.id === profile.home_parcel_id ? ' (đất gốc)' : ''}. Chạm vào luống để gieo hoặc thu hoạch.</p>
+    body = <p className="text-sm">Ruộng nhà mình{parcel.id === profile.home_parcel_id ? ' (đất hương hỏa)' : ''}. Chạm vào luống để gieo hoặc thu hoạch.</p>
   } else if (owner) {
     const home = parcels[owner.home_parcel_id]
     body = (
       <>
         <p className="text-sm">
-          Nông trại <b>{owner.farm_name}</b> của {owner.username} · Cấp {owner.level}
+          <b>{owner.farm_name}</b> của {owner.username} · Cấp {owner.level}
         </p>
         {home && (
           <button
             className="mt-2 min-h-11 w-full rounded-xl bg-[#4E9F3D] font-bold text-white active:scale-95"
             onClick={() => flyTo(...parcelCenter(home.x, home.y))}
           >
-            Thăm nông trại
+            Sang chơi nhà
           </button>
         )}
       </>
     )
   } else if (parcel.zone !== 'normal' || parcel.isHomeSlot) {
-    body = <p className="text-sm">{parcel.isHomeSlot ? 'Vị trí nhà dành cho người chơi mới.' : 'Khu vực này không bán.'}</p>
+    body = <p className="text-sm">{parcel.isHomeSlot ? 'Đất dành cho gia đình mới về làng.' : 'Khu vực này không bán.'}</p>
   } else {
     const { price, block } = checkBuy(parcel, { id: profile.id, coins: profile.coins, ownedCount, maxParcels }, landWorld())
     body = (
       <>
         <p className="text-sm">
-          Giá: <b>{formatNumber(price)} xu</b> · Bạn có {ownedCount}/{maxParcels} ô đất
+          Giá: <b>{formatNumber(price)} xu</b> · Nhà bạn có {ownedCount}/{maxParcels} mảnh
         </p>
         {block && <p className="mt-1 text-xs text-[#C0473A]">{BLOCK_TEXT[block]}</p>}
         <button
@@ -75,7 +75,7 @@ export function ParcelInfo() {
           className="mt-2 min-h-11 w-full rounded-xl bg-[#4E9F3D] font-bold text-white active:scale-95 disabled:opacity-40"
           onClick={() => void buyParcel(parcel.id)}
         >
-          Mua ô đất này
+          Mua mảnh ruộng này
         </button>
       </>
     )
@@ -86,7 +86,7 @@ export function ParcelInfo() {
       <div className="pointer-events-auto w-72 rounded-2xl bg-white/95 px-4 py-3 shadow-lg">
         <div className="mb-1 flex items-start justify-between gap-2">
           <h3 className="font-bold">
-            {mine ? 'Đất của bạn' : owner ? 'Đất của hàng xóm' : ZONE_LABEL[parcel.zone]}{' '}
+            {mine ? 'Ruộng nhà mình' : owner ? 'Ruộng nhà hàng xóm' : ZONE_LABEL[parcel.zone]}{' '}
             <span className="text-xs font-normal text-[#3B2F2A]/60">
               ({parcel.x}, {parcel.y})
             </span>

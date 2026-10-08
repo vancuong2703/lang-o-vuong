@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
+import type { DirectionalLight } from 'three'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { MapControls } from '@react-three/drei'
 import type { MapControls as MapControlsImpl } from 'three-stdlib'
 import { Chunk } from './world/Chunk'
-import { Forest } from './world/Forest'
+import { Roads } from './world/Roads'
+import { Trees } from './world/Trees'
+import { Lotus } from './world/Lotus'
 import { TownSquare } from './world/TownSquare'
 import { SelectionMarkers } from './world/SelectionMarkers'
 import { Houses } from './structures/Houses'
@@ -81,6 +84,43 @@ function CameraRig() {
   )
 }
 
+/** Soft shadows only on devices with a mouse; phones skip them to stay cool and smooth (ROADMAP 4.6). */
+const SOFT_SHADOWS = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+
+/** Warm afternoon sun that follows the camera, so a small shadow map always covers the view. */
+function SunLight() {
+  const light = useRef<DirectionalLight>(null)
+  const controls = useThree((s) => s.controls) as MapControlsImpl | null
+
+  useFrame(() => {
+    const l = light.current
+    const t = controls?.target
+    if (!l || !t) return
+    l.position.set(t.x - 16, 26, t.z + 8)
+    l.target.position.set(t.x, 0, t.z)
+    l.target.updateMatrixWorld()
+  })
+
+  return (
+    <directionalLight
+      ref={light}
+      color="#FFE9C7"
+      intensity={1.5}
+      castShadow={SOFT_SHADOWS}
+      shadow-mapSize={[2048, 2048]}
+      shadow-radius={3}
+      shadow-bias={-0.0004}
+      shadow-normalBias={0.03}
+      shadow-camera-left={-32}
+      shadow-camera-right={32}
+      shadow-camera-top={32}
+      shadow-camera-bottom={-32}
+      shadow-camera-near={1}
+      shadow-camera-far={80}
+    />
+  )
+}
+
 /** Invisible plane at plot height: taps become parcel/plot coordinates by math (ROADMAP 4.2). */
 function PickPlane() {
   const onClick = (e: ThreeEvent<MouseEvent>) => {
@@ -116,23 +156,31 @@ const CHUNKS = Array.from({ length: CHUNKS_PER_SIDE * CHUNKS_PER_SIDE }, (_, i) 
 
 export function GameCanvas() {
   return (
-    <Canvas className="absolute! inset-0" camera={{ position: [MAP_CENTER + 6, 8, MAP_CENTER + 8], fov: 45, far: 400 }} dpr={[1, 1.5]}>
-      <color attach="background" args={['#BFE6FF']} />
-      <fog attach="fog" args={['#BFE6FF', 60, 140]} />
-      <hemisphereLight args={['#ffffff', '#8CC56B', 1.0]} />
-      <directionalLight position={[6, 12, 4]} intensity={1.3} />
+    <Canvas
+      className="absolute! inset-0"
+      style={{ background: 'linear-gradient(#A9DDF3 0%, #D8EEF0 45%, #F6EBD3 100%)' }}
+      gl={{ alpha: true }}
+      shadows={SOFT_SHADOWS}
+      camera={{ position: [MAP_CENTER + 6, 8, MAP_CENTER + 8], fov: 45, far: 400 }}
+      dpr={[1, 1.5]}
+    >
+      <fog attach="fog" args={['#E8EEDC', 55, 130]} />
+      <hemisphereLight args={['#FFF4E0', '#7FAF5C', 1.15]} />
+      <SunLight />
 
       {/* grass under the whole village */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[MAP_CENTER, 0, MAP_CENTER]}>
-        <planeGeometry args={[MAP_WORLD + 60, MAP_WORLD + 60]} />
-        <meshStandardMaterial color="#8CC56B" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[MAP_CENTER, 0, MAP_CENTER]} receiveShadow>
+        <planeGeometry args={[MAP_WORLD + 80, MAP_WORLD + 80]} />
+        <meshStandardMaterial color="#9CC873" roughness={1} />
       </mesh>
 
       {CHUNKS.map(([cx, cy]) => (
         <Chunk key={`${cx}-${cy}`} cx={cx} cy={cy} />
       ))}
+      <Roads />
       <Houses />
-      <Forest />
+      <Trees />
+      <Lotus />
       <TownSquare />
       <SelectionMarkers />
       <PickPlane />

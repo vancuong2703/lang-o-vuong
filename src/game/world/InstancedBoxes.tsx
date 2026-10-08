@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
-import { Color, Matrix4, Quaternion, Vector3, type InstancedMesh } from 'three'
+import { Color, Matrix4, Quaternion, Vector3, type BufferGeometry, type InstancedMesh } from 'three'
 import { instanceColorMaterial, unitBox } from '../materials'
 
 export interface BoxInstance {
@@ -12,8 +12,18 @@ const tmpMatrix = new Matrix4()
 const tmpColor = new Color()
 const noRotation = new Quaternion()
 
-/** Many colored boxes in ONE draw call. */
-export function InstancedBoxes({ boxes }: { boxes: BoxInstance[] }) {
+/** Many colored boxes (or any shared geometry) in ONE draw call. */
+export function InstancedBoxes({
+  boxes,
+  geometry = unitBox,
+  castShadow = false,
+  receiveShadow = false,
+}: {
+  boxes: BoxInstance[]
+  geometry?: BufferGeometry
+  castShadow?: boolean
+  receiveShadow?: boolean
+}) {
   const ref = useRef<InstancedMesh>(null)
 
   useLayoutEffect(() => {
@@ -31,5 +41,13 @@ export function InstancedBoxes({ boxes }: { boxes: BoxInstance[] }) {
 
   if (boxes.length === 0) return null
   // `key` forces a new mesh when the count changes (an InstancedMesh cannot grow).
-  return <instancedMesh key={boxes.length} ref={ref} args={[unitBox, instanceColorMaterial, boxes.length]} />
+  return (
+    <instancedMesh
+      key={boxes.length}
+      ref={ref}
+      args={[geometry, instanceColorMaterial, boxes.length]}
+      castShadow={castShadow}
+      receiveShadow={receiveShadow}
+    />
+  )
 }

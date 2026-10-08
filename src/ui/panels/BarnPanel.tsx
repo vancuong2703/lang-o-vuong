@@ -68,7 +68,7 @@ export function BarnPanel() {
         <button
           className="mt-4 text-xs text-[#3B2F2A]/60 underline"
           onClick={() => {
-            if (window.confirm('Đăng xuất? Nếu đang chơi bằng tài khoản khách, bạn sẽ không vào lại được nông trại này.')) void signOut()
+            if (window.confirm('Đăng xuất? Nếu đang chơi bằng tài khoản khách, bạn sẽ không vào lại được điền trang này.')) void signOut()
           }}
         >
           Đăng xuất

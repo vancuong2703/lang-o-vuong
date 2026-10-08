@@ -5,7 +5,7 @@ import type { GrowthStage } from '../../logic/growth'
 import { vertexColorMaterial } from '../materials'
 import { cropGeometry } from './cropGeometry'
 
-const SOIL_TOP = 0.12
+const SOIL_TOP = 0.14
 const tmp = new Matrix4()
 
 /** All plots of one crop at one stage inside a chunk: one InstancedMesh, one draw call. */
@@ -21,5 +21,5 @@ export function CropInstances({ crop, stage, positions }: { crop: CropDef; stage
     mesh.computeBoundingSphere()
   }, [positions])
 
-  return <instancedMesh key={positions.length} ref={ref} args={[geometry, vertexColorMaterial, positions.length]} />
+  return <instancedMesh key={positions.length} ref={ref} args={[geometry, vertexColorMaterial, positions.length]} castShadow />
 }

@@ -9,7 +9,7 @@ export function LoginScreen() {
     <div className="flex h-full items-center justify-center bg-gradient-to-b from-[#BFE6FF] to-[#FFF3D6] p-6">
       <div className="w-full max-w-sm rounded-3xl bg-white/90 p-6 text-center shadow-xl">
         <h1 className="text-3xl font-bold text-[#4E9F3D]">Làng Ô Vuông</h1>
-        <p className="mt-1 text-sm">Cùng bạn bè làm nông trên một bản đồ chung</p>
+        <p className="mt-1 text-sm">Làm địa chủ một vùng quê: khai hoang, mua ruộng, buôn bán</p>
 
         <button
           className="mt-6 min-h-12 w-full rounded-xl border-2 border-black/10 bg-white font-bold active:scale-95"

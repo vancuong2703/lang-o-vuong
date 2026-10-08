@@ -212,7 +212,7 @@ export const useGame = create<GameState>()((set, get) => ({
     try {
       const state = await call(() => api.buyParcel(parcelId))
       if (state && state.profile) useWorld.getState().setOwner(parcelId, state.profile.id)
-      get().showToast(`Đã mua đất! −${(state as { price?: number } | null)?.price ?? ''} xu`, 'success')
+      get().showToast(`Đã mua ruộng! −${(state as { price?: number } | null)?.price ?? ''} xu`, 'success')
     } catch (err) {
       get().showToast(errorMessage(err), 'error')
     } finally {

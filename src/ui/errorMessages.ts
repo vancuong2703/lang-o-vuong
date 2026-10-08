@@ -1,10 +1,10 @@
 // Server error codes (ROADMAP 2.11) -> Vietnamese messages.
 const MESSAGES: Record<string, string> = {
   NOT_AUTHENTICATED: 'Bạn cần đăng nhập lại',
-  NO_PROFILE: 'Bạn chưa tạo nông trại',
+  NO_PROFILE: 'Bạn chưa lập điền trang',
   BANNED: 'Tài khoản đã bị khóa',
   RATE_LIMITED: 'Bạn thao tác nhanh quá, chờ một chút nhé',
-  NOT_OWNER: 'Đây không phải đất của bạn',
+  NOT_OWNER: 'Đây không phải ruộng nhà bạn',
   NOT_ENOUGH_COINS: 'Không đủ xu',
   NOT_ENOUGH_ITEMS: 'Không đủ vật phẩm trong kho',
   NOT_READY: 'Chưa chín đâu, chờ thêm nhé',
@@ -12,9 +12,9 @@ const MESSAGES: Record<string, string> = {
   LEVEL_TOO_LOW: 'Cần lên cấp cao hơn',
   BARN_FULL: 'Kho đầy rồi, hãy bán bớt nhé',
   INVALID_INPUT: 'Dữ liệu không hợp lệ',
-  INVALID_NAME: 'Tên 3–16 ký tự, tên nông trại 1–24 ký tự, không dùng ký tự đặc biệt',
+  INVALID_NAME: 'Tên 3–16 ký tự, tên điền trang 1–24 ký tự, không dùng ký tự đặc biệt',
   NAME_TAKEN: 'Tên này đã có người dùng',
-  ALREADY_STARTED: 'Bạn đã có nông trại rồi',
+  ALREADY_STARTED: 'Bạn đã có điền trang rồi',
   MAP_FULL: 'Làng đã hết chỗ',
 }
 

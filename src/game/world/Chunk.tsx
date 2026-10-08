@@ -9,21 +9,23 @@ import { useClock } from '../../state/clock'
 import { useGame } from '../../state/gameStore'
 import { landWorld, useWorld, type Parcel } from '../../state/worldStore'
 import { InstancedBoxes, type BoxInstance } from './InstancedBoxes'
+import { soilGeometry } from '../materials'
 
 // One chunk = 8x8 parcels, drawn with a handful of InstancedMeshes (ROADMAP 4.3-4.4).
 
+// Warm "old Vietnamese village" palette (GDD 10.1).
 const COLORS = {
-  mine: '#E3CFA0',
-  other: '#D8C49A',
-  free: '#A9D47F',
-  buyable: '#CBE9A0',
-  town: '#D9CDB0',
-  lake: '#6EC6E6',
-  forest: '#5E9E48',
-  alluvial: '#C9B26B',
-  soil: '#9C6B44',
-  railMine: '#F2B33D',
-  railOther: '#A9744F',
+  mine: '#D9C08E',
+  other: '#CDB98F',
+  free: '#B5D58A',
+  buyable: '#D3EBA6',
+  town: '#D8C7A6',
+  lake: '#7FCDE3',
+  forest: '#86B860',
+  alluvial: '#CDB772',
+  soil: '#8B5E3C',
+  railMine: '#E9B949',
+  railOther: '#9C8A5C',
 }
 
 function tileColor(p: Parcel, myId: string | undefined, buyable: boolean): string {
@@ -73,10 +75,10 @@ export function Chunk({ cx, cy }: { cx: number; cy: number }) {
       if (p.ownerId) {
         const color = p.ownerId === myId ? COLORS.railMine : COLORS.railOther
         rails.push(
-          { position: [ox + 2, 0.18, oz - 0.2], scale: [4.6, 0.08, 0.08], color },
-          { position: [ox + 2, 0.18, oz + 4.2], scale: [4.6, 0.08, 0.08], color },
-          { position: [ox - 0.2, 0.18, oz + 2], scale: [0.08, 0.08, 4.6], color },
-          { position: [ox + 4.2, 0.18, oz + 2], scale: [0.08, 0.08, 4.6], color },
+          { position: [ox + 2, 0.07, oz - 0.2], scale: [4.5, 0.12, 0.1], color },
+          { position: [ox + 2, 0.07, oz + 4.2], scale: [4.5, 0.12, 0.1], color },
+          { position: [ox - 0.2, 0.07, oz + 2], scale: [0.1, 0.12, 4.5], color },
+          { position: [ox + 4.2, 0.07, oz + 2], scale: [0.1, 0.12, 4.5], color },
         )
       }
     }
@@ -96,7 +98,7 @@ export function Chunk({ cx, cy }: { cx: number; cy: number }) {
   }, [parcels, myId, myPlots, otherPlots])
 
   const soil = useMemo<BoxInstance[]>(
-    () => plots.map(({ x, z }) => ({ position: [x, 0.06, z], scale: [0.9, 0.12, 0.9], color: COLORS.soil })),
+    () => plots.map(({ x, z }) => ({ position: [x, 0.07, z], scale: [1, 1, 1], color: COLORS.soil })),
     [plots],
   )
 
@@ -124,9 +126,9 @@ export function Chunk({ cx, cy }: { cx: number; cy: number }) {
 
   return (
     <group>
-      <InstancedBoxes boxes={tiles} />
-      <InstancedBoxes boxes={rails} />
-      <InstancedBoxes boxes={soil} />
+      <InstancedBoxes boxes={tiles} receiveShadow />
+      <InstancedBoxes boxes={rails} castShadow />
+      <InstancedBoxes boxes={soil} geometry={soilGeometry} receiveShadow />
       {cropGroups.map(([k, g]) =>
         cropsById[g.cropId] ? <CropInstances key={k} crop={cropsById[g.cropId]} stage={g.stage} positions={g.positions} /> : null,
       )}

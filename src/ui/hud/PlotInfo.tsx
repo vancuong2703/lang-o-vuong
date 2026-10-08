@@ -15,7 +15,7 @@ export function PlotInfo() {
   const ready = progress >= 1
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center px-3">
+    <div className="pointer-events-none absolute inset-x-0 bottom-32 z-20 flex justify-center px-3">
       <div className="w-64 rounded-2xl bg-white/95 px-4 py-2.5 shadow-lg">
         <div className="flex items-baseline justify-between font-bold">
           <span>{crop.nameVi}</span>
