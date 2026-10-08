@@ -35,6 +35,19 @@ export interface PlayerState {
   server_now: string
   harvested?: number
   level_up?: boolean
+  upgraded?: UpgradeKind
+  level?: number
+  target?: number | null
+}
+
+export type UpgradeKind = 'house' | 'barn' | 'tool' | 'fertility'
+
+export interface UpgradeLevelRow {
+  kind: UpgradeKind
+  level: number
+  cost: number
+  required_player_level: number
+  value: number
 }
 
 /** get_world compact rows (see migration 20261008130000). */
@@ -90,6 +103,13 @@ export const api = {
   serverNow: () => rpc<string>('server_now'),
   getWorld: () => rpc<WorldPayload>('get_world'),
   buyParcel: (parcelId: number) => rpc<PlayerState & { price: number }>('buy_parcel', { p_parcel_id: parcelId }),
+  upgrade: (kind: UpgradeKind, targetId?: number) => rpc<PlayerState>('upgrade', { p_kind: kind, p_target_id: targetId ?? null }),
+
+  async loadUpgradeLevels(): Promise<UpgradeLevelRow[]> {
+    const { data, error } = await supabase.from('upgrade_levels').select('kind, level, cost, required_player_level, value').order('level')
+    if (error) throw new GameError(error.message)
+    return (data as UpgradeLevelRow[]).map((r) => ({ ...r, cost: Number(r.cost), value: Number(r.value) }))
+  },
 
   async loadConfig(): Promise<Record<string, unknown>> {
     const { data, error } = await supabase.from('game_config').select('key, value')

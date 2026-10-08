@@ -16,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   NAME_TAKEN: 'Tên này đã có người dùng',
   ALREADY_STARTED: 'Bạn đã có điền trang rồi',
   MAP_FULL: 'Làng đã hết chỗ',
+  TOOL_AREA: 'Công cụ chưa đủ cấp để làm cả vùng này',
+  MAX_LEVEL: 'Đã đạt cấp tối đa',
 }
 
 export function errorMessage(err: unknown): string {

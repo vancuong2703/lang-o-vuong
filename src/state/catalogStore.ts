@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { CROP_VISUALS, DEFAULT_CROP_VISUAL, type CropVisual } from '../game/data/cropVisuals'
-import { api } from '../services/api'
+import { api, type UpgradeKind, type UpgradeLevelRow } from '../services/api'
 
 // Game config loaded from the database (game_config, items, crops), merged with how crops look.
 
@@ -19,6 +19,8 @@ interface CatalogState {
   crops: CropDef[]
   cropsById: Record<string, CropDef>
   houseMaxParcels: number[]
+  /** upgrade_levels grouped by kind, index 0 = level 1 (GDD 5). */
+  upgrades: Record<UpgradeKind, UpgradeLevelRow[]>
   loaded: boolean
   load: () => Promise<void>
 }
@@ -27,11 +29,12 @@ export const useCatalog = create<CatalogState>((set, get) => ({
   crops: [],
   cropsById: {},
   houseMaxParcels: [3, 6, 10, 16, 25],
+  upgrades: { house: [], barn: [], tool: [], fertility: [] },
   loaded: false,
 
   load: async () => {
     if (get().loaded) return
-    const [rows, config] = await Promise.all([api.loadCrops(), api.loadConfig()])
+    const [rows, levels] = await Promise.all([api.loadCrops(), api.loadUpgradeLevels()])
     const crops = rows
       .map(
         (r): CropDef => ({
@@ -47,7 +50,9 @@ export const useCatalog = create<CatalogState>((set, get) => ({
         }),
       )
       .sort((a, b) => a.unlockLevel - b.unlockLevel)
-    const houseMaxParcels = Array.isArray(config.house_max_parcels) ? (config.house_max_parcels as number[]) : get().houseMaxParcels
-    set({ crops, cropsById: Object.fromEntries(crops.map((c) => [c.id, c])), houseMaxParcels, loaded: true })
+    const upgrades: Record<UpgradeKind, UpgradeLevelRow[]> = { house: [], barn: [], tool: [], fertility: [] }
+    for (const row of levels) upgrades[row.kind].push(row)
+    const houseMaxParcels = upgrades.house.length ? upgrades.house.map((r) => r.value) : get().houseMaxParcels
+    set({ crops, cropsById: Object.fromEntries(crops.map((c) => [c.id, c])), houseMaxParcels, upgrades, loaded: true })
   },
 }))

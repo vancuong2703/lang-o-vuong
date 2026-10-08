@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import { api, type PlayerState, type PlotRow, type Profile } from '../services/api'
+import { api, type PlayerState, type PlotRow, type Profile, type UpgradeKind } from '../services/api'
 import { supabase } from '../services/supabase'
 import { errorMessage } from '../ui/errorMessages'
 import { useCatalog } from './catalogStore'
 import { syncServerTime, useClock } from './clock'
 import { useWorld } from './worldStore'
 import { parcelCenter } from '../logic/grid'
+import { plotsInArea } from '../logic/toolArea'
 
 // Phase 2: the server decides everything. This store only keeps a COPY of the server state
 // and turns taps into RPC calls (ROADMAP 1.3 B and 1.4). Never change coins/items here.
@@ -38,6 +39,7 @@ interface GameState {
   createFarm: (username: string, farmName: string) => Promise<void>
   tapPlot: (parcelId: number, lx: number, ly: number) => void
   buyParcel: (parcelId: number) => Promise<void>
+  upgrade: (kind: UpgradeKind, targetId?: number) => Promise<void>
   goHome: () => void
   sell: (itemId: string, qty: number) => Promise<void>
   selectSeed: (cropId: string) => void
@@ -180,15 +182,41 @@ export const useGame = create<GameState>()((set, get) => ({
       return
     }
 
-    const request = plot.crop_item_id === null ? () => api.plant([plot.id], selectedSeed) : () => api.harvest([plot.id])
-    set({ pendingPlotIds: [...pendingPlotIds, plot.id], selectedPlotId: plot.crop_item_id === null ? plot.id : null })
+    // Tool area (GDD 5.3): one tap acts on every matching plot in the area of the tool level.
+    const area = plotsInArea(profile.tool_level, plot, plots).filter((p) => !pendingPlotIds.includes(p.id))
+    let ids: number[]
+    let request: () => Promise<PlayerState>
+    if (plot.crop_item_id === null) {
+      const seedPrice = useCatalog.getState().cropsById[selectedSeed]?.seedPrice ?? 0
+      const affordable = seedPrice > 0 ? Math.floor(profile.coins / seedPrice) : area.length
+      ids = area.filter((p) => p.crop_item_id === null).slice(0, Math.max(1, affordable)).map((p) => p.id)
+      request = () => api.plant(ids, selectedSeed)
+    } else {
+      ids = area.filter((p) => p.ready_at !== null && now >= Date.parse(p.ready_at)).map((p) => p.id)
+      request = () => api.harvest(ids)
+    }
+    set({ pendingPlotIds: [...pendingPlotIds, ...ids], selectedPlotId: plot.crop_item_id === null ? plot.id : null })
 
     call(request)
       .then((state) => {
         if (state?.level_up) get().showToast(`Lên cấp ${state.profile.level}!`, 'success')
+        else if (state?.harvested && state.harvested > 1) get().showToast(`Đã gặt ${state.harvested} luống`, 'success')
       })
       .catch((err) => get().showToast(errorMessage(err), 'error'))
-      .finally(() => set((s) => ({ pendingPlotIds: s.pendingPlotIds.filter((id) => id !== plot.id) })))
+      .finally(() => set((s) => ({ pendingPlotIds: s.pendingPlotIds.filter((id) => !ids.includes(id)) })))
+  },
+
+  upgrade: async (kind, targetId) => {
+    set({ busy: true })
+    try {
+      const state = await call(() => api.upgrade(kind, targetId))
+      if (kind === 'fertility' && targetId && state?.level) useWorld.getState().setFertility(targetId, state.level)
+      get().showToast(`Đã nâng cấp lên cấp ${state?.level ?? ''}!`, 'success')
+    } catch (err) {
+      get().showToast(errorMessage(err), 'error')
+    } finally {
+      set({ busy: false })
+    }
   },
 
   sell: async (itemId, qty) => {

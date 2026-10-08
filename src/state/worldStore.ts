@@ -28,6 +28,7 @@ interface WorldState {
 
   load: () => Promise<void>
   setOwner: (parcelId: number, ownerId: string) => void
+  setFertility: (parcelId: number, level: number) => void
   selectParcel: (id: number | null) => void
   flyTo: (x: number, z: number) => void
   setNeighboursOpen: (open: boolean) => void
@@ -63,6 +64,8 @@ export const useWorld = create<WorldState>((set) => ({
 
   setOwner: (parcelId, ownerId) =>
     set((s) => ({ parcels: { ...s.parcels, [parcelId]: { ...s.parcels[parcelId], ownerId } } })),
+  setFertility: (parcelId, level) =>
+    set((s) => ({ parcels: { ...s.parcels, [parcelId]: { ...s.parcels[parcelId], fertility: level } } })),
   selectParcel: (id) => set({ selectedParcelId: id }),
   flyTo: (x, z) => set((s) => ({ flyTarget: { x, z, id: (s.flyTarget?.id ?? 0) + 1 } })),
   setNeighboursOpen: (open) => set({ neighboursOpen: open }),

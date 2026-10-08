@@ -34,6 +34,8 @@ export function ParcelInfo() {
   const busy = useGame((s) => s.busy)
   const buyParcel = useGame((s) => s.buyParcel)
   const houseMax = useCatalog((s) => s.houseMaxParcels)
+  const fertilityLevels = useCatalog((s) => s.upgrades.fertility)
+  const upgrade = useGame((s) => s.upgrade)
   if (!parcel || !profile) return null
 
   const ownedCount = Object.values(parcels).filter((p) => p.ownerId === profile.id).length
@@ -42,7 +44,28 @@ export function ParcelInfo() {
 
   let body: ReactNode
   if (mine) {
-    body = <p className="text-sm">Ruộng nhà mình{parcel.id === profile.home_parcel_id ? ' (đất hương hỏa)' : ''}. Chạm vào luống để gieo hoặc thu hoạch.</p>
+    const fertility = fertilityLevels.find((r) => r.level === parcel.fertility)
+    const nextFertility = fertilityLevels.find((r) => r.level === parcel.fertility + 1)
+    body = (
+      <>
+        <p className="text-sm">
+          Ruộng nhà mình{parcel.id === profile.home_parcel_id ? ' (đất hương hỏa)' : ''}. Chạm vào luống để gieo hoặc thu hoạch.
+        </p>
+        <p className="mt-1 text-sm">
+          Độ phì nhiêu cấp {parcel.fertility}
+          {fertility && fertility.value > 0 ? ` · cây lớn nhanh hơn ${Math.round(fertility.value * 100)}%` : ''}
+        </p>
+        {nextFertility && (
+          <button
+            disabled={busy || profile.coins < nextFertility.cost}
+            className="mt-2 min-h-11 w-full rounded-xl bg-[#8B5E3C] font-bold text-white active:scale-95 disabled:opacity-40"
+            onClick={() => void upgrade('fertility', parcel.id)}
+          >
+            Bón đất lên cấp {nextFertility.level} (+{Math.round(nextFertility.value * 100)}%) · {formatNumber(nextFertility.cost)} xu
+          </button>
+        )}
+      </>
+    )
   } else if (owner) {
     const home = parcels[owner.home_parcel_id]
     body = (
