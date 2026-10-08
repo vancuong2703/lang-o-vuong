@@ -31,6 +31,11 @@ Phase 3 (GĐ3) done: `get_world` + `buy_parcel` RPCs; `src/state/worldStore.ts` 
 - Land rules for UI hints: `src/logic/land.ts` (server `buy_parcel` is authoritative).
 - Admin/dev SQL: write a .sql file and run `npx supabase db query --linked -f file.sql`.
 
+Setting & visuals (GDD 1.2a, 6.7, 10.1): landlord family in an old Vietnamese village. Wording: "điền trang", "mảnh ruộng";
+land titles in `src/logic/titles.ts`. Fixed roads `src/game/world/Roads.tsx`; buildings/trees are merged vertex-color
+geometries (`src/game/shapes.ts`, `src/game/structures/houseGeometry.ts`, `src/game/world/Trees.tsx`).
+Shadows only on devices with a fine pointer (desktop); never add textures.
+
 ## Golden rules
 1. The server decides everything about money, items, time and ownership. The client never writes tables directly; it only calls RPC functions (see ROADMAP 2.8).
 2. Never put secret keys / service_role keys in frontend code or Git. `.env.local` is never committed.

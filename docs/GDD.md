@@ -57,6 +57,26 @@ Tài liệu này dùng tên **Làng Ô Vuông**. Đổi tên lúc nào cũng đ�
 - **Người chơi mục tiêu (target audience):** sinh viên và nhóm bạn thích game thư giãn (cozy game). Mỗi lần chơi 5–15 phút, vài lần một ngày.
 - **Nền tảng (platform):** trình duyệt trên máy tính và điện thoại, không cần cài đặt. Trên điện thoại nên cầm ngang (landscape), cầm dọc vẫn chơi được.
 
+### 1.2a Bối cảnh: gia đình địa chủ ở làng quê Việt Nam xưa (Setting)
+
+Mỗi người chơi vào vai **một gia đình về làng lập nghiệp**: khai hoang, mua thêm ruộng, buôn bán, dần trở thành địa chủ giàu nhất làng.
+
+- Đây chỉ là **bối cảnh và tên gọi**. Lối chơi giữ nguyên như các mục sau, không thêm cơ chế mới như thuê tá điền hay thành viên gia đình.
+- **Đổi tên gọi trong game:**
+  - "Nông trại" gọi là **điền trang** (estate).
+  - "Ô đất" gọi là **mảnh ruộng**.
+  - Đất gốc gọi là **đất hương hỏa** (đất của tổ tiên).
+  - Người chơi gọi là **chủ nhà**.
+- **Danh hiệu theo số mảnh ruộng (land title):** hiện trên bảng tên ở nhà và trên thanh trên cùng. Đây chỉ là tên gọi, không cho thêm quyền gì.
+
+| Số mảnh ruộng | Danh hiệu |
+|---|---|
+| 1–2 | Nông hộ |
+| 3–5 | Phú nông |
+| 6–10 | Điền chủ |
+| 11–19 | Địa chủ |
+| 20 trở lên | Đại địa chủ |
+
 ### 1.3 Trụ cột thiết kế (Design pillars)
 
 Mỗi khi phân vân có nên thêm một tính năng hay không, hãy đối chiếu với 4 trụ cột sau:
@@ -562,6 +582,15 @@ Một ô đất chỉ mua được khi **thỏa tất cả** các điều kiện
 - Người chơi không đăng nhập 14 ngày thì nông trại chuyển sang trạng thái **"ngủ đông"**: có thêm cỏ dại để trang trí và một biển nhỏ. **Không xóa dữ liệu.**
 - [Sau MVP, cân nhắc kỹ] Thu hồi vị trí nhà của người bỏ game lâu (ví dụ trên 60 ngày và dưới cấp 5) để nhường cho người mới.
 
+### 6.7 Đường làng (Village roads)
+
+- Đường làng là **đường cố định do hệ thống vẽ sẵn**. Người chơi không xây hay phá được.
+- **Đường cái (main road):** đường đất chạy trong khe giữa các mảnh ruộng, **cứ 4 mảnh có một đường**, theo cả hai chiều. Vị trí nhà cũng cách nhau 4 mảnh, nên mỗi khu điền trang đều có đường bao quanh.
+- **Đường vòng quanh quảng trường:** bao quanh khu 6×6 ở giữa làng.
+- **Bờ ruộng (field dykes):** khe nhỏ giữa các mảnh ruộng còn lại vẫn để cỏ.
+- Chỗ đường đi qua hồ thì trông như **đường đê** đắp ngang ao.
+- Ở MVP, đường **chỉ để trang trí**, không ảnh hưởng giá đất hay lối chơi.
+
 ---
 
 ## 7. Tương tác giữa người chơi, chợ và đấu giá
@@ -760,26 +789,43 @@ Vì sao? Mọi thứ chạy trong trình duyệt đều sửa được bằng c�
 
 ### 10.1 Phong cách hình ảnh (Art direction)
 
-- **Low-poly + đổ bóng phẳng (flat shading):** ít đa giác, mỗi mặt một màu, **không dùng texture** (ảnh dán bề mặt). Lợi ích: nhẹ, đẹp, dễ dựng bằng code.
-- **Bảng màu pastel ấm:**
+- **Làng quê Việt Nam xưa, low-poly mềm mại:** ít đa giác, **không dùng texture** (ảnh dán bề mặt), nhưng các khối được bo tròn và đổ bóng mịn (smooth shading) để trông mềm, ấm áp. Lợi ích: nhẹ, đẹp, dễ dựng bằng code.
+- **Những hình ảnh đặc trưng (đều dựng bằng code):**
+
+| Hình ảnh | Ở đâu |
+|---|---|
+| Nhà mái ngói đỏ, hiên có cột, sân gạch, đụn rơm, chum nước | Đất hương hỏa của mỗi nhà |
+| Lũy tre làng | Bao quanh mép bản đồ |
+| Cây tán tròn, cây cau | Các ô rừng |
+| Ao sen (lá sen và hoa sen hồng) | Các ô hồ |
+| Đình làng (mái lớn, đầu đao cong lên) | Giữa quảng trường |
+| Cây đa và giếng làng | Quảng trường |
+| Chợ làng (sạp mái tranh) | Quảng trường |
+| Đường đất hai tông màu | Đường làng (mục 6.7) |
+
+- **Bảng màu ấm:**
 
 | Thành phần | Mã màu | Ghi chú |
 |---|---|---|
-| Cỏ (grass) | `#8CC56B` | Màu nền chính |
-| Đất luống (soil) | `#9C6B44` | Luống đã cày |
-| Đất trống chưa có chủ | `#B9D99A` | Cỏ nhạt + biển "Bán đất" |
-| Lối đi (path) | `#E3CFA0` | |
-| Nước (water) | `#6EC6E6` | Hồ |
-| Gỗ (wood) | `#A9744F` | Hàng rào, chuồng |
-| Mái nhà (roof) | `#E06D5A` | |
-| Bầu trời (sky) | `#BFE6FF` → `#FFF3D6` | Chuyển màu từ trên xuống |
+| Cỏ nền (grass) | `#9CC873` | Màu nền chính |
+| Ruộng hoang chưa có chủ | `#B5D58A` | Ô mua được thì sáng hơn: `#D3EBA6` |
+| Đất luống (soil) | `#8B5E3C` | Luống bo tròn |
+| Nền ruộng nhà mình / nhà khác | `#D9C08E` / `#CDB98F` | |
+| Bờ rào nhà mình / nhà khác | `#E9B949` / `#9C8A5C` | Viền vàng để nhận ra ruộng nhà mình |
+| Đường đất | `#CDB28A` (viền `#B99B70`) | |
+| Nước ao | `#7FCDE3` | |
+| Mái ngói | `#B5543C` (nhà mình), `#9C5A46` (nhà khác) | |
+| Tường nhà | `#EEDDBA` | |
+| Bầu trời | `#A9DDF3` → `#D8EEF0` → `#F6EBD3` | Chuyển màu từ trên xuống, sương mù màu `#E8EEDC` |
 | UI chính (primary) | `#4E9F3D` | Nút bấm |
 | UI nhấn (accent) | `#F2B33D` | Xu, điểm nhấn |
 | Chữ (text) | `#3B2F2A` | Nâu đậm, dịu mắt hơn màu đen |
 
 - **Ánh sáng:**
-  - Một nguồn sáng bầu trời (hemisphere light) và một nguồn sáng mặt trời (directional light).
-  - Trên điện thoại **không đổ bóng thời gian thực (real-time shadow)**. Thay vào đó dùng **bóng giả (blob shadow)**: một hình tròn tối mờ dưới chân vật.
+  - Một nguồn sáng bầu trời màu kem ấm (hemisphere light) và một nguồn sáng mặt trời buổi chiều (directional light).
+  - Mặt trời chiếu từ phía trái, để bóng rơi về phía người chơi nhìn thấy được.
+  - **Trên máy tính:** có bóng đổ thời gian thực (real-time shadow). Vùng bóng đi theo camera để chỉ cần một shadow map nhỏ.
+  - **Trên điện thoại:** tắt bóng đổ cho máy đỡ nóng.
 - **Camera:**
   - Nhìn chéo từ trên xuống, góc 50–60°.
   - Kéo để di chuyển, chụm hai ngón (pinch) để zoom, giới hạn không cho ra ngoài bản đồ.
