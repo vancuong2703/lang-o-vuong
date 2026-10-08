@@ -31,6 +31,16 @@ Phase 3 (GĐ3) done: `get_world` + `buy_parcel` RPCs; `src/state/worldStore.ts` 
 - Land rules for UI hints: `src/logic/land.ts` (server `buy_parcel` is authoritative).
 - Admin/dev SQL: write a .sql file and run `npx supabase db query --linked -f file.sql`.
 
+Phase 4 (GĐ4) done:
+- Upgrades: table `upgrade_levels` (single source for house limit, barn capacity, tool area, fertility), RPC `upgrade`;
+  tool areas in `src/logic/toolArea.ts` + `private.tool_area_ok`.
+- Realtime: statement-level triggers on plots/parcels -> `realtime.send` to private topic `chunk:<cx>:<cy>`;
+  client `src/services/realtime.ts` + `src/state/realtimeSync.ts` (3x3 chunks around the camera), presence on `village`.
+- Leaderboards: security-invoker views `leaderboard_level|land|weekly`; "Làng" panel.
+- Daily login / quests / orders: RPCs `claim_daily_login`, `get_daily_quests`, `claim_quest`, `get_orders`,
+  `fulfill_order`, `skip_order`. Quest progress comes from TRIGGERS on `coin_ledger` and `player_stats` (do not
+  call progress from RPCs). Cron job `cleanup-coin-ledger` keeps 30 days of ledger.
+
 Setting & visuals (GDD 1.2a, 6.7, 10.1): landlord family in an old Vietnamese village. Wording: "điền trang", "mảnh ruộng";
 land titles in `src/logic/titles.ts`. Fixed roads `src/game/world/Roads.tsx`; buildings/trees are merged vertex-color
 geometries (`src/game/shapes.ts`, `src/game/structures/houseGeometry.ts`, `src/game/world/Trees.tsx`).
