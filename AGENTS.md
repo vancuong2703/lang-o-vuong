@@ -8,13 +8,19 @@ The developer is a student and a beginner at backend/Git: keep changes small and
 ## Stack (versions from package.json)
 - React 19, Vite, TypeScript (strict)
 - three 0.186, @react-three/fiber 9, @react-three/drei 10
-- Planned: Zustand, Tailwind CSS, Vitest, Supabase (Auth, Postgres, Realtime), Vercel
+- zustand 5, Tailwind CSS 4 (via @tailwindcss/vite), Vitest 5
+- Planned: Supabase (Auth, Postgres, Realtime), Vercel
 - Do NOT add other libraries without asking first.
 
 ## Commands
 - `npm run dev` — dev server (add `-- --host` to test on phone)
 - `npm run build` — type-check + production build
 - `npm run lint` — oxlint
+- `npm run test` — unit tests (Vitest, files `src/**/*.test.ts`)
+
+## Current phase
+Phase 1 (GĐ1): one home parcel, game rules run locally in `src/state/gameStore.ts` and save to localStorage.
+`src/game/data/crops.ts` and `gameStore.ts` are TEMPORARY and will be replaced by Supabase RPC in phase 2.
 
 ## Golden rules
 1. The server decides everything about money, items, time and ownership. The client never writes tables directly; it only calls RPC functions (see ROADMAP 2.8).
