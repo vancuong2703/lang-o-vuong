@@ -61,6 +61,18 @@ export interface ParcelRow {
   fertility_level: number
 }
 
+export type LeaderboardKind = 'level' | 'land' | 'weekly'
+
+export interface LeaderboardEntry {
+  id: string
+  username: string
+  farm_name: string
+  level: number
+  xp?: number
+  parcels?: number
+  weekly_xp?: number
+}
+
 /** get_world compact rows (see migration 20261008130000). */
 export type ParcelTuple = [number, number, number, string, boolean, number | null, string | null, number]
 export type PlotTuple = [number, number, string, number, number, string | null, string | null, string | null]
@@ -120,6 +132,18 @@ export const api = {
     const { data, error } = await supabase.from('upgrade_levels').select('kind, level, cost, required_player_level, value').order('level')
     if (error) throw new GameError(error.message)
     return (data as UpgradeLevelRow[]).map((r) => ({ ...r, cost: Number(r.cost), value: Number(r.value) }))
+  },
+
+  /** Top 100 of a leaderboard view (migration 20261008160000). */
+  async loadLeaderboard(kind: LeaderboardKind): Promise<LeaderboardEntry[]> {
+    const columns = { level: 'id, username, farm_name, level, xp', land: 'id, username, farm_name, level, parcels', weekly: 'id, username, farm_name, level, weekly_xp' }[kind]
+    const { data, error } = await supabase.from(`leaderboard_${kind}`).select(columns).limit(50)
+    if (error) throw new GameError(error.message)
+    return (data as unknown as LeaderboardEntry[]).map((e) => ({
+      ...e,
+      xp: e.xp === undefined ? undefined : Number(e.xp),
+      weekly_xp: e.weekly_xp === undefined ? undefined : Number(e.weekly_xp),
+    }))
   },
 
   /** One parcel and its plots (realtime refresh, ROADMAP 4.7). */

@@ -57,7 +57,7 @@ export function TopBar() {
             className="min-h-11 whitespace-nowrap rounded-full bg-white/90 px-4 text-sm font-bold shadow active:scale-95"
             onClick={() => setNeighboursOpen(true)}
           >
-            Hàng xóm
+            Làng · Xếp hạng
           </button>
           <button
             className="min-h-11 whitespace-nowrap rounded-full bg-[#4E9F3D] px-4 text-sm font-bold text-white shadow active:scale-95"
