@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { GameCanvas } from './game/GameCanvas'
 import { startClock } from './state/clock'
 import { useGame } from './state/gameStore'
+import { useRealtimeSync } from './state/realtimeSync'
 import { TopBar } from './ui/hud/TopBar'
 import { SeedBar } from './ui/hud/SeedBar'
 import { PlotInfo } from './ui/hud/PlotInfo'
@@ -36,6 +37,8 @@ function Screen() {
 
 function App() {
   const init = useGame((s) => s.init)
+  const ready = useGame((s) => s.status === 'ready')
+  useRealtimeSync(ready)
 
   useEffect(() => startClock(), [])
   useEffect(() => init(), [init])

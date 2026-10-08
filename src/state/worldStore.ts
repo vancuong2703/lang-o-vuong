@@ -25,8 +25,16 @@ interface WorldState {
   selectedParcelId: number | null
   flyTarget: FlyTarget | null
   neighboursOpen: boolean
+  /** Chunks around the camera ("cx:cy"); realtime listens only to these. */
+  visibleChunks: string[]
+  /** Player ids online right now (realtime presence). */
+  onlineIds: Record<string, true>
 
   load: () => Promise<void>
+  /** Re-read one parcel (+ its plots and owner) after a realtime doorbell. Returns the new parcel. */
+  refreshParcel: (parcelId: number) => Promise<Parcel | undefined>
+  setVisibleChunks: (keys: string[]) => void
+  setOnline: (ids: string[]) => void
   setOwner: (parcelId: number, ownerId: string) => void
   setFertility: (parcelId: number, level: number) => void
   selectParcel: (id: number | null) => void
@@ -36,7 +44,7 @@ interface WorldState {
 
 const key = (x: number, y: number) => `${x},${y}`
 
-export const useWorld = create<WorldState>((set) => ({
+export const useWorld = create<WorldState>((set, get) => ({
   loaded: false,
   parcels: {},
   idByXY: {},
@@ -45,6 +53,8 @@ export const useWorld = create<WorldState>((set) => ({
   selectedParcelId: null,
   flyTarget: null,
   neighboursOpen: false,
+  visibleChunks: [],
+  onlineIds: {},
 
   load: async () => {
     const world = await api.getWorld()
@@ -62,6 +72,34 @@ export const useWorld = create<WorldState>((set) => ({
     set({ loaded: true, parcels, idByXY, players, plotsByParcel })
   },
 
+  refreshParcel: async (parcelId) => {
+    const { parcel: row, plots } = await api.getParcelSnapshot(parcelId)
+    if (!row) return undefined
+    const parcel: Parcel = {
+      id: row.id,
+      x: row.x,
+      y: row.y,
+      zone: row.zone as Zone,
+      isHomeSlot: row.is_home_slot,
+      prioritySlotId: row.priority_slot_id,
+      ownerId: row.owner_id,
+      fertility: row.fertility_level,
+    }
+    let players = get().players
+    if (parcel.ownerId && !players[parcel.ownerId]) {
+      const player = await api.getPlayer(parcel.ownerId)
+      if (player) players = { ...players, [player.id]: player }
+    }
+    set((s) => ({
+      parcels: { ...s.parcels, [parcelId]: parcel },
+      idByXY: { ...s.idByXY, [key(parcel.x, parcel.y)]: parcel.id },
+      plotsByParcel: { ...s.plotsByParcel, [parcelId]: plots },
+      players,
+    }))
+    return parcel
+  },
+  setVisibleChunks: (keys) => set({ visibleChunks: keys }),
+  setOnline: (ids) => set({ onlineIds: Object.fromEntries(ids.map((id) => [id, true as const])) }),
   setOwner: (parcelId, ownerId) =>
     set((s) => ({ parcels: { ...s.parcels, [parcelId]: { ...s.parcels[parcelId], ownerId } } })),
   setFertility: (parcelId, level) =>

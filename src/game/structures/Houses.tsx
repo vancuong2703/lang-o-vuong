@@ -14,6 +14,7 @@ export function Houses() {
   const players = useWorld((s) => s.players)
   const parcels = useWorld((s) => s.parcels)
   const myId = useGame((s) => s.profile?.id)
+  const online = useWorld((s) => s.onlineIds)
 
   const landCount: Record<string, number> = {}
   for (const p of Object.values(parcels)) if (p.ownerId) landCount[p.ownerId] = (landCount[p.ownerId] ?? 0) + 1
@@ -34,6 +35,7 @@ export function Houses() {
                   mine ? 'bg-[#E9B949] text-[#3B2F2A]' : 'bg-white/90 text-[#3B2F2A]'
                 }`}
               >
+                {online[player.id] && <span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#3CC15A] align-middle" />}
                 {player.farm_name} · {landTitle(landCount[player.id] ?? 1)}
               </div>
             </Html>

@@ -50,6 +50,17 @@ export interface UpgradeLevelRow {
   value: number
 }
 
+export interface ParcelRow {
+  id: number
+  x: number
+  y: number
+  zone: string
+  is_home_slot: boolean
+  priority_slot_id: number | null
+  owner_id: string | null
+  fertility_level: number
+}
+
 /** get_world compact rows (see migration 20261008130000). */
 export type ParcelTuple = [number, number, number, string, boolean, number | null, string | null, number]
 export type PlotTuple = [number, number, string, number, number, string | null, string | null, string | null]
@@ -109,6 +120,31 @@ export const api = {
     const { data, error } = await supabase.from('upgrade_levels').select('kind, level, cost, required_player_level, value').order('level')
     if (error) throw new GameError(error.message)
     return (data as UpgradeLevelRow[]).map((r) => ({ ...r, cost: Number(r.cost), value: Number(r.value) }))
+  },
+
+  /** One parcel and its plots (realtime refresh, ROADMAP 4.7). */
+  async getParcelSnapshot(parcelId: number): Promise<{ parcel: ParcelRow | null; plots: PlotRow[] }> {
+    const [parcel, plots] = await Promise.all([
+      supabase
+        .from('parcels')
+        .select('id, x, y, zone, is_home_slot, priority_slot_id, owner_id, fertility_level')
+        .eq('id', parcelId)
+        .maybeSingle(),
+      supabase.from('plots').select('id, parcel_id, lx, ly, crop_item_id, planted_at, ready_at').eq('parcel_id', parcelId),
+    ])
+    if (parcel.error) throw new GameError(parcel.error.message)
+    if (plots.error) throw new GameError(plots.error.message)
+    return { parcel: parcel.data as ParcelRow | null, plots: (plots.data ?? []) as PlotRow[] }
+  },
+
+  async getPlayer(id: string): Promise<PlayerInfo | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, farm_name, level, avatar_color, home_parcel_id')
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new GameError(error.message)
+    return data as PlayerInfo | null
   },
 
   async loadConfig(): Promise<Record<string, unknown>> {

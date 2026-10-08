@@ -12,6 +12,7 @@ export function NeighboursPanel() {
   const flyTo = useWorld((s) => s.flyTo)
   const selectParcel = useWorld((s) => s.selectParcel)
   const myId = useGame((s) => s.profile?.id)
+  const online = useWorld((s) => s.onlineIds)
   const clearSelection = useGame((s) => s.clearSelection)
   if (!open) return null
 
@@ -35,6 +36,7 @@ export function NeighboursPanel() {
                 <div className="flex-1">
                   <div className="font-bold">
                     {p.farm_name} {p.id === myId && <span className="text-xs text-[#4E9F3D]">(bạn)</span>}
+                    {online[p.id] && p.id !== myId && <span className="ml-1 text-xs font-semibold text-[#3CA552]">● đang online</span>}
                   </div>
                   <div className="text-xs">
                     {p.username} · Cấp {p.level} · {landTitle(landCount(p.id))} · {landCount(p.id)} mảnh ruộng

@@ -31,6 +31,8 @@ interface GameState {
   barnOpen: boolean
   busy: boolean
   toast: Toast | null
+  /** Time of my last RPC (used to ignore realtime echoes of my own actions). */
+  lastActionAt: number
 
   init: () => () => void
   signInGuest: () => Promise<void>
@@ -41,6 +43,7 @@ interface GameState {
   buyParcel: (parcelId: number) => Promise<void>
   upgrade: (kind: UpgradeKind, targetId?: number) => Promise<void>
   goHome: () => void
+  refreshMyState: () => Promise<void>
   sell: (itemId: string, qty: number) => Promise<void>
   selectSeed: (cropId: string) => void
   setBarnOpen: (open: boolean) => void
@@ -57,6 +60,7 @@ let toastId = 0
 /** Calls an RPC, measures the round trip, syncs the server clock and stores the returned state. */
 async function call(fn: () => Promise<PlayerState | null>): Promise<PlayerState | null> {
   const sentAt = Date.now()
+  useGame.setState({ lastActionAt: sentAt })
   const state = await fn()
   if (state) {
     syncServerTime(state.server_now, sentAt, Date.now())
@@ -82,6 +86,7 @@ export const useGame = create<GameState>()((set, get) => ({
   barnOpen: false,
   busy: false,
   toast: null,
+  lastActionAt: 0,
 
   init: () => {
     const load = async () => {
@@ -111,12 +116,12 @@ export const useGame = create<GameState>()((set, get) => ({
       if (event === 'SIGNED_OUT') set({ status: 'signed_out', profile: null, plots: [], inventory: {} })
     })
 
-    // Other players' farms: refresh every 3 minutes and when the tab comes back.
-    // Phase 4 replaces this polling with realtime broadcasts.
+    // Realtime keeps nearby parcels fresh; a full reload every 10 minutes and when the tab comes back
+    // catches everything else (other players' levels, far-away chunks).
     const refreshWorld = () => {
       if (get().status === 'ready' && document.visibilityState === 'visible') void useWorld.getState().load().catch(() => {})
     }
-    const timer = setInterval(refreshWorld, 180_000)
+    const timer = setInterval(refreshWorld, 600_000)
     document.addEventListener('visibilitychange', refreshWorld)
 
     return () => {
@@ -245,6 +250,14 @@ export const useGame = create<GameState>()((set, get) => ({
       get().showToast(errorMessage(err), 'error')
     } finally {
       set({ busy: false })
+    }
+  },
+
+  refreshMyState: async () => {
+    try {
+      await call(api.getMyState)
+    } catch {
+      // ignore: the next action or reload will sync again
     }
   },
 

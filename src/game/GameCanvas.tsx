@@ -5,6 +5,7 @@ import { MapControls } from '@react-three/drei'
 import type { MapControls as MapControlsImpl } from 'three-stdlib'
 import { Chunk } from './world/Chunk'
 import { Roads } from './world/Roads'
+import { ChunkWatcher } from './world/ChunkWatcher'
 import { Trees } from './world/Trees'
 import { Lotus } from './world/Lotus'
 import { TownSquare } from './world/TownSquare'
@@ -160,7 +161,7 @@ export function GameCanvas() {
       className="absolute! inset-0"
       style={{ background: 'linear-gradient(#A9DDF3 0%, #D8EEF0 45%, #F6EBD3 100%)' }}
       gl={{ alpha: true }}
-      shadows={SOFT_SHADOWS}
+      shadows={SOFT_SHADOWS ? 'percentage' : false}
       camera={{ position: [MAP_CENTER + 6, 8, MAP_CENTER + 8], fov: 45, far: 400 }}
       dpr={[1, 1.5]}
     >
@@ -185,6 +186,7 @@ export function GameCanvas() {
       <SelectionMarkers />
       <PickPlane />
       <CameraRig />
+      <ChunkWatcher />
     </Canvas>
   )
 }
