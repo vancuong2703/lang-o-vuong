@@ -25,7 +25,11 @@ The developer is a student and a beginner at backend/Git: keep changes small and
 Phase 2 (GĐ2) done: Supabase auth (guest + Google), RPCs `start_game`, `get_my_state`, `plant`, `harvest`, `sell`.
 - SQL lives in `supabase/migrations/`; helpers in schema `private`; every RPC follows the 9-step pattern (ROADMAP 2.8).
 - Client: `src/services/api.ts` (RPC wrappers), `src/state/gameStore.ts` (copy of server state), `src/state/catalogStore.ts` (crop config from DB).
-- The home parcel is still drawn at the world origin; phase 3 places parcels at their real map position.
+Phase 3 (GĐ3) done: `get_world` + `buy_parcel` RPCs; `src/state/worldStore.ts` holds all parcels/players/other plots.
+- Map rendering: `src/game/world/Chunk.tsx` (one per 8x8 parcels, InstancedMesh for tiles/rails/soil/crops),
+  crop shapes are merged geometries in `src/game/crops/cropGeometry.ts`.
+- Land rules for UI hints: `src/logic/land.ts` (server `buy_parcel` is authoritative).
+- Admin/dev SQL: write a .sql file and run `npx supabase db query --linked -f file.sql`.
 
 ## Golden rules
 1. The server decides everything about money, items, time and ownership. The client never writes tables directly; it only calls RPC functions (see ROADMAP 2.8).
