@@ -18,6 +18,8 @@ const MESSAGES: Record<string, string> = {
   MAP_FULL: 'Làng đã hết chỗ',
   TOOL_AREA: 'Công cụ chưa đủ cấp để làm cả vùng này',
   MAX_LEVEL: 'Đã đạt cấp tối đa',
+  ALREADY_CLAIMED: 'Bạn đã nhận phần này rồi',
+  QUEST_EXPIRED: 'Việc này đã hết hạn, hãy làm việc của hôm nay',
 }
 
 export function errorMessage(err: unknown): string {

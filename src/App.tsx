@@ -10,6 +10,7 @@ import { ToastView } from './ui/hud/ToastView'
 import { BarnPanel } from './ui/panels/BarnPanel'
 import { ParcelInfo } from './ui/panels/ParcelInfo'
 import { NeighboursPanel } from './ui/panels/NeighboursPanel'
+import { DailyLoginModal } from './ui/panels/DailyLoginModal'
 import { LoginScreen } from './ui/screens/LoginScreen'
 import { CreateFarmScreen } from './ui/screens/CreateFarmScreen'
 
@@ -31,6 +32,7 @@ function Screen() {
       <SeedBar />
       <BarnPanel />
       <NeighboursPanel />
+      <DailyLoginModal />
     </>
   )
 }

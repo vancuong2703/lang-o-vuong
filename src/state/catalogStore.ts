@@ -21,6 +21,8 @@ interface CatalogState {
   houseMaxParcels: number[]
   /** upgrade_levels grouped by kind, index 0 = level 1 (GDD 5). */
   upgrades: Record<UpgradeKind, UpgradeLevelRow[]>
+  /** Base coins for login streak day 1..7 (GDD 8.4). */
+  loginRewards: number[]
   loaded: boolean
   load: () => Promise<void>
 }
@@ -30,11 +32,12 @@ export const useCatalog = create<CatalogState>((set, get) => ({
   cropsById: {},
   houseMaxParcels: [3, 6, 10, 16, 25],
   upgrades: { house: [], barn: [], tool: [], fertility: [] },
+  loginRewards: [50, 80, 120, 160, 220, 300, 500],
   loaded: false,
 
   load: async () => {
     if (get().loaded) return
-    const [rows, levels] = await Promise.all([api.loadCrops(), api.loadUpgradeLevels()])
+    const [rows, levels, config] = await Promise.all([api.loadCrops(), api.loadUpgradeLevels(), api.loadConfig()])
     const crops = rows
       .map(
         (r): CropDef => ({
@@ -53,6 +56,7 @@ export const useCatalog = create<CatalogState>((set, get) => ({
     const upgrades: Record<UpgradeKind, UpgradeLevelRow[]> = { house: [], barn: [], tool: [], fertility: [] }
     for (const row of levels) upgrades[row.kind].push(row)
     const houseMaxParcels = upgrades.house.length ? upgrades.house.map((r) => r.value) : get().houseMaxParcels
-    set({ crops, cropsById: Object.fromEntries(crops.map((c) => [c.id, c])), houseMaxParcels, upgrades, loaded: true })
+    const loginRewards = Array.isArray(config.login_rewards) ? (config.login_rewards as number[]) : get().loginRewards
+    set({ crops, cropsById: Object.fromEntries(crops.map((c) => [c.id, c])), houseMaxParcels, upgrades, loginRewards, loaded: true })
   },
 }))

@@ -15,6 +15,8 @@ export interface Profile {
   tool_level: number
   house_level: number
   home_parcel_id: number
+  login_streak: number
+  last_login_date: string | null
 }
 
 export interface PlotRow {
@@ -59,6 +61,38 @@ export interface ParcelRow {
   priority_slot_id: number | null
   owner_id: string | null
   fertility_level: number
+}
+
+export interface DailyQuest {
+  id: number
+  type: string
+  name: string
+  target: number
+  progress: number
+  reward_coins: number
+  reward_xp: number
+  claimed: boolean
+}
+
+export interface QuestsPayload {
+  unlocked: boolean
+  unlock_level: number
+  quests: DailyQuest[]
+}
+
+export interface Order {
+  id: number
+  slot: number
+  requirements: { item_id: string; qty: number }[]
+  reward_coins: number
+  reward_xp: number
+}
+
+export interface OrdersPayload {
+  unlocked?: boolean
+  unlock_level?: number
+  active: Order[]
+  cooldowns: { slot: number; next_at: string }[]
 }
 
 export type LeaderboardKind = 'level' | 'land' | 'weekly'
@@ -127,6 +161,12 @@ export const api = {
   getWorld: () => rpc<WorldPayload>('get_world'),
   buyParcel: (parcelId: number) => rpc<PlayerState & { price: number }>('buy_parcel', { p_parcel_id: parcelId }),
   upgrade: (kind: UpgradeKind, targetId?: number) => rpc<PlayerState>('upgrade', { p_kind: kind, p_target_id: targetId ?? null }),
+  claimDailyLogin: () => rpc<PlayerState & { login_day: number; login_reward: number }>('claim_daily_login'),
+  getDailyQuests: () => rpc<QuestsPayload>('get_daily_quests'),
+  claimQuest: (questId: number) => rpc<PlayerState & { quests: DailyQuest[]; all_done_bonus: boolean }>('claim_quest', { p_quest_id: questId }),
+  getOrders: () => rpc<OrdersPayload>('get_orders'),
+  fulfillOrder: (orderId: number) => rpc<PlayerState & { orders: OrdersPayload }>('fulfill_order', { p_order_id: orderId }),
+  skipOrder: (orderId: number) => rpc<OrdersPayload>('skip_order', { p_order_id: orderId }),
 
   async loadUpgradeLevels(): Promise<UpgradeLevelRow[]> {
     const { data, error } = await supabase.from('upgrade_levels').select('kind, level, cost, required_player_level, value').order('level')

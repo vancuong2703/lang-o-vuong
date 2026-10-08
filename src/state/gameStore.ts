@@ -58,7 +58,7 @@ export function barnUsed(inventory: Record<string, number>): number {
 let toastId = 0
 
 /** Calls an RPC, measures the round trip, syncs the server clock and stores the returned state. */
-async function call(fn: () => Promise<PlayerState | null>): Promise<PlayerState | null> {
+async function call<T extends PlayerState>(fn: () => Promise<T | null>): Promise<T | null> {
   const sentAt = Date.now()
   useGame.setState({ lastActionAt: sentAt })
   const state = await fn()
@@ -278,3 +278,6 @@ export const useGame = create<GameState>()((set, get) => ({
   clearSelection: () => set({ selectedPlotId: null }),
   showToast: (text, kind = 'info') => set({ toast: { id: ++toastId, text, kind } }),
 }))
+
+/** For panels: run an RPC that returns the player state, keep the store in sync, return the full result. */
+export const callGame = call
