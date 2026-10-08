@@ -1,16 +1,19 @@
-import { CROPS } from '../../game/data/crops'
-import { BARN_CAPACITY, barnUsed, useGame } from '../../state/gameStore'
+import { useCatalog } from '../../state/catalogStore'
+import { barnUsed, useGame } from '../../state/gameStore'
 import { formatNumber } from '../format'
 
 export function BarnPanel() {
   const open = useGame((s) => s.barnOpen)
   const inventory = useGame((s) => s.inventory)
+  const capacity = useGame((s) => s.barnCapacity)
+  const busy = useGame((s) => s.busy)
   const setBarnOpen = useGame((s) => s.setBarnOpen)
   const sell = useGame((s) => s.sell)
-  const reset = useGame((s) => s.reset)
+  const signOut = useGame((s) => s.signOut)
+  const crops = useCatalog((s) => s.crops)
   if (!open) return null
 
-  const items = CROPS.filter((c) => (inventory[c.id] ?? 0) > 0)
+  const items = crops.filter((c) => (inventory[c.id] ?? 0) > 0)
   const totalValue = items.reduce((sum, c) => sum + c.sellPrice * (inventory[c.id] ?? 0), 0)
 
   return (
@@ -18,7 +21,7 @@ export function BarnPanel() {
       <div className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl bg-[#FFF8EA] p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold">
-            Kho · {barnUsed(inventory)}/{BARN_CAPACITY}
+            Kho · {barnUsed(inventory)}/{capacity}
           </h2>
           <button className="min-h-11 min-w-11 rounded-full bg-black/5 font-bold" onClick={() => setBarnOpen(false)} aria-label="Đóng">
             ✕
@@ -40,10 +43,18 @@ export function BarnPanel() {
                     </div>
                     <div className="text-xs">{crop.sellPrice} xu / cái</div>
                   </div>
-                  <button className="min-h-11 rounded-lg bg-black/5 px-3 text-sm font-semibold active:scale-95" onClick={() => sell(crop.id, 1)}>
+                  <button
+                    disabled={busy}
+                    className="min-h-11 rounded-lg bg-black/5 px-3 text-sm font-semibold active:scale-95 disabled:opacity-50"
+                    onClick={() => void sell(crop.id, 1)}
+                  >
                     Bán 1
                   </button>
-                  <button className="min-h-11 rounded-lg bg-[#4E9F3D] px-3 text-sm font-semibold text-white active:scale-95" onClick={() => sell(crop.id, qty)}>
+                  <button
+                    disabled={busy}
+                    className="min-h-11 rounded-lg bg-[#4E9F3D] px-3 text-sm font-semibold text-white active:scale-95 disabled:opacity-50"
+                    onClick={() => void sell(crop.id, qty)}
+                  >
                     Bán hết
                   </button>
                 </li>
@@ -57,10 +68,10 @@ export function BarnPanel() {
         <button
           className="mt-4 text-xs text-[#3B2F2A]/60 underline"
           onClick={() => {
-            if (window.confirm('Xóa toàn bộ tiến trình và chơi lại từ đầu?')) reset()
+            if (window.confirm('Đăng xuất? Nếu đang chơi bằng tài khoản khách, bạn sẽ không vào lại được nông trại này.')) void signOut()
           }}
         >
-          Chơi lại từ đầu
+          Đăng xuất
         </button>
       </div>
     </div>

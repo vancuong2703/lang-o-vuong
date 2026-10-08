@@ -4,8 +4,7 @@ import { MapControls } from '@react-three/drei'
 import type { MapControls as MapControlsImpl } from 'three-stdlib'
 import { HomeParcel } from './world/HomeParcel'
 import { Scenery } from './world/Scenery'
-import { plotIndex, worldToPlot } from '../logic/grid'
-import { useClock } from '../state/clock'
+import { worldToPlot } from '../logic/grid'
 import { useGame } from '../state/gameStore'
 
 const PARCEL_CENTER: [number, number, number] = [2, 0, 2]
@@ -41,7 +40,7 @@ function PickPlane() {
       clearSelection()
       return
     }
-    tapPlot(plotIndex(coord.plotX, coord.plotY), useClock.getState().now)
+    tapPlot(coord.plotX, coord.plotY)
   }
 
   return (

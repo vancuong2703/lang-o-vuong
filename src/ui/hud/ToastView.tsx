@@ -18,8 +18,8 @@ export function ToastView() {
 
   if (!toast) return null
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-36 flex justify-center px-3">
-      <div key={toast.id} className={`rounded-full px-4 py-2 text-sm font-semibold shadow-lg ${COLORS[toast.kind]}`}>
+    <div className="pointer-events-none absolute inset-x-0 top-36 z-10 flex justify-center px-3">
+      <div key={toast.id} className={`rounded-full px-4 py-2 text-center text-sm font-semibold shadow-lg ${COLORS[toast.kind]}`}>
         {toast.text}
       </div>
     </div>

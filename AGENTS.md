@@ -18,9 +18,14 @@ The developer is a student and a beginner at backend/Git: keep changes small and
 - `npm run lint` — oxlint
 - `npm run test` — unit tests (Vitest, files `src/**/*.test.ts`)
 
+- `npx supabase db push` — apply new migrations to the linked project
+- `npx supabase gen types typescript --linked > src/types/database.types.ts` — regenerate DB types (run in Git Bash; never edit that file by hand)
+
 ## Current phase
-Phase 1 (GĐ1): one home parcel, game rules run locally in `src/state/gameStore.ts` and save to localStorage.
-`src/game/data/crops.ts` and `gameStore.ts` are TEMPORARY and will be replaced by Supabase RPC in phase 2.
+Phase 2 (GĐ2) done: Supabase auth (guest + Google), RPCs `start_game`, `get_my_state`, `plant`, `harvest`, `sell`.
+- SQL lives in `supabase/migrations/`; helpers in schema `private`; every RPC follows the 9-step pattern (ROADMAP 2.8).
+- Client: `src/services/api.ts` (RPC wrappers), `src/state/gameStore.ts` (copy of server state), `src/state/catalogStore.ts` (crop config from DB).
+- The home parcel is still drawn at the world origin; phase 3 places parcels at their real map position.
 
 ## Golden rules
 1. The server decides everything about money, items, time and ownership. The client never writes tables directly; it only calls RPC functions (see ROADMAP 2.8).

@@ -1,12 +1,12 @@
-import { CROPS } from '../../game/data/crops'
 import { formatDuration } from '../../logic/growth'
-import { levelFromXp } from '../../logic/progression'
+import { useCatalog } from '../../state/catalogStore'
 import { useGame } from '../../state/gameStore'
 
 export function SeedBar() {
+  const crops = useCatalog((s) => s.crops)
   const selectedSeed = useGame((s) => s.selectedSeed)
   const selectSeed = useGame((s) => s.selectSeed)
-  const level = useGame((s) => levelFromXp(s.xp).level)
+  const level = useGame((s) => s.profile?.level ?? 1)
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
@@ -14,7 +14,7 @@ export function SeedBar() {
         Chạm luống trống để gieo · chạm cây chín để thu hoạch
       </p>
       <div className="pointer-events-auto mx-auto flex max-w-3xl gap-2 overflow-x-auto rounded-2xl bg-white/90 p-2 shadow-lg">
-        {CROPS.map((crop) => {
+        {crops.map((crop) => {
           const locked = level < crop.unlockLevel
           const active = crop.id === selectedSeed
           return (

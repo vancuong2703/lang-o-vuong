@@ -1,23 +1,27 @@
-import { CROPS_BY_ID } from '../data/crops'
 import { CropModel } from '../crops/CropModel'
 import { growthProgress, growthStage } from '../../logic/growth'
-import { PARCEL_PLOTS, plotFromIndex } from '../../logic/grid'
+import { PARCEL_PLOTS } from '../../logic/grid'
+import type { PlotRow } from '../../services/api'
+import { useCatalog } from '../../state/catalogStore'
 import { useClock } from '../../state/clock'
-import { isHousePlot, useGame, type PlotState } from '../../state/gameStore'
+import { useGame } from '../../state/gameStore'
 
-// The player's home parcel at parcel (0,0): house + barn in Q0, 12 plots elsewhere.
+// The player's home parcel, drawn at the world origin: house + barn in Q0, 12 plots elsewhere.
+// Phase 3 will place every parcel at its real map position.
 
 const SOIL = '#9C6B44'
 const SOIL_SELECTED = '#C28A5C'
 const PATH = '#E3CFA0'
 const WOOD = '#A9744F'
 
-function Plot({ index, plot, selected }: { index: number; plot: PlotState | null; selected: boolean }) {
-  const { plotX, plotY } = plotFromIndex(index)
-  const x = plotX + 0.5
-  const z = plotY + 0.5
+function Plot({ plot, selected }: { plot: PlotRow; selected: boolean }) {
+  const x = plot.lx + 0.5
+  const z = plot.ly + 0.5
+  const crop = useCatalog((s) => (plot.crop_item_id ? s.cropsById[plot.crop_item_id] : undefined))
+  const plantedAt = plot.planted_at ? Date.parse(plot.planted_at) : 0
+  const readyAt = plot.ready_at ? Date.parse(plot.ready_at) : 0
   // Selector returns a primitive, so this plot only re-renders when its stage changes.
-  const stage = useClock((s) => (plot ? growthStage(growthProgress(plot.plantedAt, plot.readyAt, s.now)) : 0))
+  const stage = useClock((s) => (crop ? growthStage(growthProgress(plantedAt, readyAt, s.now)) : 0))
 
   return (
     <group>
@@ -25,7 +29,7 @@ function Plot({ index, plot, selected }: { index: number; plot: PlotState | null
         <boxGeometry args={[0.9, 0.12, 0.9]} />
         <meshStandardMaterial color={selected ? SOIL_SELECTED : SOIL} flatShading />
       </mesh>
-      {plot && <CropModel crop={CROPS_BY_ID[plot.cropId]} stage={stage} position={[x, z]} />}
+      {crop && <CropModel crop={crop} stage={stage} position={[x, z]} />}
     </group>
   )
 }
@@ -97,7 +101,8 @@ function Fence() {
 
 export function HomeParcel() {
   const plots = useGame((s) => s.plots)
-  const selectedPlot = useGame((s) => s.selectedPlot)
+  const homeId = useGame((s) => s.profile?.home_parcel_id)
+  const selectedPlotId = useGame((s) => s.selectedPlotId)
 
   return (
     <group>
@@ -108,9 +113,11 @@ export function HomeParcel() {
       </mesh>
       <Fence />
       <House />
-      {plots.map((plot, i) =>
-        isHousePlot(i) ? null : <Plot key={i} index={i} plot={plot} selected={selectedPlot === i} />,
-      )}
+      {plots
+        .filter((p) => p.parcel_id === homeId)
+        .map((plot) => (
+          <Plot key={plot.id} plot={plot} selected={selectedPlotId === plot.id} />
+        ))}
     </group>
   )
 }

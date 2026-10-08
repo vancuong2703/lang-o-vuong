@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
-import type { CropDef } from '../data/crops'
+import type { CropDef } from '../../state/catalogStore'
 import type { GrowthStage } from '../../logic/growth'
 
 // Low-poly crops built from basic shapes (GDD 10.1). One model per (crop, stage).
