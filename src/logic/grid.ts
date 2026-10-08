@@ -33,6 +33,16 @@ export function plotToWorld(coord: PlotCoord): [number, number] {
   ]
 }
 
+/** World (x, z) of a parcel's top-left corner. */
+export function parcelOrigin(parcelX: number, parcelY: number): [number, number] {
+  return [parcelX * PARCEL_PITCH, parcelY * PARCEL_PITCH]
+}
+
+/** World (x, z) of a parcel's center. */
+export function parcelCenter(parcelX: number, parcelY: number): [number, number] {
+  return [parcelX * PARCEL_PITCH + PARCEL_PLOTS / 2, parcelY * PARCEL_PITCH + PARCEL_PLOTS / 2]
+}
+
 /** Index 0..15 of a plot inside its parcel (row by row). */
 export function plotIndex(plotX: number, plotY: number): number {
   return plotY * PARCEL_PLOTS + plotX

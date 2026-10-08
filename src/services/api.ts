@@ -37,6 +37,26 @@ export interface PlayerState {
   level_up?: boolean
 }
 
+/** get_world compact rows (see migration 20261008130000). */
+export type ParcelTuple = [number, number, number, string, boolean, number | null, string | null, number]
+export type PlotTuple = [number, number, string, number, number, string | null, string | null, string | null]
+
+export interface PlayerInfo {
+  id: string
+  username: string
+  farm_name: string
+  level: number
+  avatar_color: string
+  home_parcel_id: number
+}
+
+export interface WorldPayload {
+  parcels: ParcelTuple[]
+  players: PlayerInfo[]
+  plots: PlotTuple[]
+  server_now: string
+}
+
 export interface CropRow {
   item_id: string
   seed_price: number
@@ -68,6 +88,14 @@ export const api = {
   harvest: (plotIds: number[]) => rpc<PlayerState>('harvest', { p_plot_ids: plotIds }),
   sell: (itemId: string, qty: number) => rpc<PlayerState>('sell', { p_item_id: itemId, p_qty: qty }),
   serverNow: () => rpc<string>('server_now'),
+  getWorld: () => rpc<WorldPayload>('get_world'),
+  buyParcel: (parcelId: number) => rpc<PlayerState & { price: number }>('buy_parcel', { p_parcel_id: parcelId }),
+
+  async loadConfig(): Promise<Record<string, unknown>> {
+    const { data, error } = await supabase.from('game_config').select('key, value')
+    if (error) throw new GameError(error.message)
+    return Object.fromEntries((data as { key: string; value: unknown }[]).map((r) => [r.key, r.value]))
+  },
 
   async loadCrops(): Promise<CropRow[]> {
     const { data, error } = await supabase

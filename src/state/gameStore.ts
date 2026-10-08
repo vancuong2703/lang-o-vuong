@@ -4,6 +4,8 @@ import { supabase } from '../services/supabase'
 import { errorMessage } from '../ui/errorMessages'
 import { useCatalog } from './catalogStore'
 import { syncServerTime, useClock } from './clock'
+import { useWorld } from './worldStore'
+import { parcelCenter } from '../logic/grid'
 
 // Phase 2: the server decides everything. This store only keeps a COPY of the server state
 // and turns taps into RPC calls (ROADMAP 1.3 B and 1.4). Never change coins/items here.
@@ -34,7 +36,9 @@ interface GameState {
   signInGoogle: () => Promise<void>
   signOut: () => Promise<void>
   createFarm: (username: string, farmName: string) => Promise<void>
-  tapPlot: (lx: number, ly: number) => void
+  tapPlot: (parcelId: number, lx: number, ly: number) => void
+  buyParcel: (parcelId: number) => Promise<void>
+  goHome: () => void
   sell: (itemId: string, qty: number) => Promise<void>
   selectSeed: (cropId: string) => void
   setBarnOpen: (open: boolean) => void
@@ -83,6 +87,10 @@ export const useGame = create<GameState>()((set, get) => ({
       try {
         await useCatalog.getState().load()
         const state = await call(api.getMyState)
+        if (state) {
+          await useWorld.getState().load()
+          get().goHome()
+        }
         set({ status: state ? 'ready' : 'needs_farm' })
       } catch (err) {
         get().showToast(errorMessage(err), 'error')
@@ -97,10 +105,23 @@ export const useGame = create<GameState>()((set, get) => ({
 
     const { data } = supabase.auth.onAuthStateChange((event) => {
       // Do not await Supabase calls inside this callback (supabase-js docs); defer them.
-      if (event === 'SIGNED_IN') setTimeout(() => void load(), 0)
+      if (event === 'SIGNED_IN' && get().status === 'signed_out') setTimeout(() => void load(), 0)
       if (event === 'SIGNED_OUT') set({ status: 'signed_out', profile: null, plots: [], inventory: {} })
     })
-    return () => data.subscription.unsubscribe()
+
+    // Other players' farms: refresh every 3 minutes and when the tab comes back.
+    // Phase 4 replaces this polling with realtime broadcasts.
+    const refreshWorld = () => {
+      if (get().status === 'ready' && document.visibilityState === 'visible') void useWorld.getState().load().catch(() => {})
+    }
+    const timer = setInterval(refreshWorld, 180_000)
+    document.addEventListener('visibilitychange', refreshWorld)
+
+    return () => {
+      data.subscription.unsubscribe()
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWorld)
+    }
   },
 
   signInGuest: async () => {
@@ -127,6 +148,8 @@ export const useGame = create<GameState>()((set, get) => ({
     set({ busy: true })
     try {
       await call(() => api.startGame(username, farmName))
+      await useWorld.getState().load()
+      get().goHome()
       set({ status: 'ready' })
       get().showToast('Chào mừng tới Làng Ô Vuông!', 'success')
     } catch (err) {
@@ -136,14 +159,17 @@ export const useGame = create<GameState>()((set, get) => ({
     }
   },
 
-  tapPlot: (lx, ly) => {
+  tapPlot: (parcelId, lx, ly) => {
     const { profile, plots, pendingPlotIds, selectedSeed } = get()
     if (!profile) return
-    const plot = plots.find((p) => p.parcel_id === profile.home_parcel_id && p.lx === lx && p.ly === ly)
+    const plot = plots.find((p) => p.parcel_id === parcelId && p.lx === lx && p.ly === ly)
     if (!plot) {
+      // House quadrant of my home parcel: show the parcel card instead.
       set({ selectedPlotId: null })
+      useWorld.getState().selectParcel(parcelId)
       return
     }
+    useWorld.getState().selectParcel(null)
     if (pendingPlotIds.includes(plot.id)) return
 
     const now = useClock.getState().now
@@ -178,6 +204,28 @@ export const useGame = create<GameState>()((set, get) => ({
       get().showToast(errorMessage(err), 'error')
     } finally {
       set({ busy: false })
+    }
+  },
+
+  buyParcel: async (parcelId) => {
+    set({ busy: true })
+    try {
+      const state = await call(() => api.buyParcel(parcelId))
+      if (state && state.profile) useWorld.getState().setOwner(parcelId, state.profile.id)
+      get().showToast(`Đã mua đất! −${(state as { price?: number } | null)?.price ?? ''} xu`, 'success')
+    } catch (err) {
+      get().showToast(errorMessage(err), 'error')
+    } finally {
+      set({ busy: false })
+    }
+  },
+
+  goHome: () => {
+    const home = get().profile?.home_parcel_id
+    const parcel = home ? useWorld.getState().parcels[home] : undefined
+    if (parcel) {
+      useWorld.getState().selectParcel(null)
+      useWorld.getState().flyTo(...parcelCenter(parcel.x, parcel.y))
     }
   },
 

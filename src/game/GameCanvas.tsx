@@ -1,92 +1,142 @@
 import { useEffect, useRef } from 'react'
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { MapControls } from '@react-three/drei'
 import type { MapControls as MapControlsImpl } from 'three-stdlib'
-import { HomeParcel } from './world/HomeParcel'
-import { Scenery } from './world/Scenery'
-import { worldToPlot } from '../logic/grid'
+import { Chunk } from './world/Chunk'
+import { Forest } from './world/Forest'
+import { TownSquare } from './world/TownSquare'
+import { SelectionMarkers } from './world/SelectionMarkers'
+import { Houses } from './structures/Houses'
+import { CHUNKS_PER_SIDE, MAP_CENTER, MAP_WORLD } from './world/mapConstants'
+import { PARCEL_PITCH, worldToPlot } from '../logic/grid'
 import { useGame } from '../state/gameStore'
+import { parcelAt, useWorld } from '../state/worldStore'
 
-const PARCEL_CENTER: [number, number, number] = [2, 0, 2]
 /** Pointer moved more than this (px) between down and up = drag, not a tap. */
 const DRAG_THRESHOLD = 8
+/** Camera offset from the point it looks at. */
+const OFFSET = { x: 6, y: 8, z: 8 }
 
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v))
 }
 
-/** Moves the camera further back on portrait screens so the whole parcel fits. */
-function CameraFit() {
-  const camera = useThree((s) => s.camera)
+/**
+ * Camera controls + smooth "fly to".
+ * (Home and Visit buttons use the fly-to.)
+ * The camera keeps the same offset from its target, so moving the target moves the view.
+ */
+function CameraRig() {
+  const controls = useRef<MapControlsImpl>(null)
   const aspect = useThree((s) => s.size.width / s.size.height)
+  const flyTarget = useWorld((s) => s.flyTarget)
+  const flying = useRef(false)
+
+  // Portrait screens need the camera further back to fit a whole parcel.
+  useEffect(() => {
+    const c = controls.current
+    if (!c) return
+    const zoom = aspect < 1 ? 1.45 : 1
+    c.object.position.set(c.target.x + OFFSET.x * zoom, OFFSET.y * zoom, c.target.z + OFFSET.z * zoom)
+  }, [aspect])
 
   useEffect(() => {
-    const zoom = aspect < 1 ? 1.45 : 1
-    camera.position.set(PARCEL_CENTER[0] + 6 * zoom, 8 * zoom, PARCEL_CENTER[2] + 8 * zoom)
-  }, [camera, aspect])
+    if (flyTarget) flying.current = true
+  }, [flyTarget])
 
-  return null
+  useFrame((state, dt) => {
+    const c = controls.current
+    if (!c || !flying.current || !flyTarget) return
+    const k = 1 - Math.exp(-dt * 4)
+    const dx = (flyTarget.x - c.target.x) * k
+    const dz = (flyTarget.z - c.target.z) * k
+    c.target.x += dx
+    c.target.z += dz
+    state.camera.position.x += dx
+    state.camera.position.z += dz
+    c.update()
+    if (Math.hypot(flyTarget.x - c.target.x, flyTarget.z - c.target.z) < 0.05) flying.current = false
+  })
+
+  return (
+    <MapControls
+      ref={controls}
+      makeDefault
+      target={[MAP_CENTER, 0, MAP_CENTER]}
+      minDistance={5}
+      maxDistance={45}
+      minPolarAngle={0.35}
+      maxPolarAngle={1.15}
+      onStart={() => {
+        flying.current = false
+      }}
+      onChange={() => {
+        // Keep the view inside the village so players cannot get lost.
+        const t = controls.current?.target
+        if (!t) return
+        t.x = clamp(t.x, -5, MAP_WORLD + 5)
+        t.z = clamp(t.z, -5, MAP_WORLD + 5)
+      }}
+    />
+  )
 }
 
-/** Invisible plane at plot height: every tap is converted to a plot with math (ROADMAP 4.2). */
+/** Invisible plane at plot height: taps become parcel/plot coordinates by math (ROADMAP 4.2). */
 function PickPlane() {
-  const tapPlot = useGame((s) => s.tapPlot)
-  const clearSelection = useGame((s) => s.clearSelection)
-
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > DRAG_THRESHOLD) return
+    const game = useGame.getState()
+    const world = useWorld.getState()
     const coord = worldToPlot(e.point.x, e.point.z)
-    if (!coord || coord.parcelX !== 0 || coord.parcelY !== 0) {
-      clearSelection()
+    const parcel = coord
+      ? parcelAt(coord.parcelX, coord.parcelY)
+      : parcelAt(Math.floor(e.point.x / PARCEL_PITCH), Math.floor(e.point.z / PARCEL_PITCH))
+    if (!parcel) {
+      game.clearSelection()
+      world.selectParcel(null)
       return
     }
-    tapPlot(coord.plotX, coord.plotY)
+    if (coord && parcel.ownerId && parcel.ownerId === game.profile?.id) {
+      game.tapPlot(parcel.id, coord.plotX, coord.plotY)
+      return
+    }
+    game.clearSelection()
+    world.selectParcel(parcel.id)
   }
 
   return (
-    <mesh position={[0, 0.12, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={onClick}>
-      <planeGeometry args={[200, 200]} />
+    <mesh position={[MAP_CENTER, 0.12, MAP_CENTER]} rotation={[-Math.PI / 2, 0, 0]} onClick={onClick}>
+      <planeGeometry args={[MAP_WORLD + 40, MAP_WORLD + 40]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
   )
 }
 
-export function GameCanvas() {
-  const controls = useRef<MapControlsImpl>(null)
+const CHUNKS = Array.from({ length: CHUNKS_PER_SIDE * CHUNKS_PER_SIDE }, (_, i) => [i % CHUNKS_PER_SIDE, Math.floor(i / CHUNKS_PER_SIDE)])
 
+export function GameCanvas() {
   return (
-    <Canvas className="absolute! inset-0" camera={{ position: [8, 8, 10], fov: 45 }} dpr={[1, 1.5]}>
+    <Canvas className="absolute! inset-0" camera={{ position: [MAP_CENTER + 6, 8, MAP_CENTER + 8], fov: 45, far: 400 }} dpr={[1, 1.5]}>
       <color attach="background" args={['#BFE6FF']} />
+      <fog attach="fog" args={['#BFE6FF', 60, 140]} />
       <hemisphereLight args={['#ffffff', '#8CC56B', 1.0]} />
       <directionalLight position={[6, 12, 4]} intensity={1.3} />
 
-      {/* grass */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2, 0, 2]}>
-        <planeGeometry args={[60, 60]} />
+      {/* grass under the whole village */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[MAP_CENTER, 0, MAP_CENTER]}>
+        <planeGeometry args={[MAP_WORLD + 60, MAP_WORLD + 60]} />
         <meshStandardMaterial color="#8CC56B" />
       </mesh>
 
-      <CameraFit />
-      <Scenery />
-      <HomeParcel />
+      {CHUNKS.map(([cx, cy]) => (
+        <Chunk key={`${cx}-${cy}`} cx={cx} cy={cy} />
+      ))}
+      <Houses />
+      <Forest />
+      <TownSquare />
+      <SelectionMarkers />
       <PickPlane />
-
-      <MapControls
-        makeDefault
-        target={PARCEL_CENTER}
-        minDistance={4}
-        maxDistance={22}
-        minPolarAngle={0.35}
-        maxPolarAngle={1.15}
-        onChange={() => {
-          // Keep the camera target near the farm so players cannot get lost.
-          const target = controls.current?.target
-          if (!target) return
-          target.x = clamp(target.x, -10, 14)
-          target.z = clamp(target.z, -10, 14)
-        }}
-        ref={controls}
-      />
+      <CameraRig />
     </Canvas>
   )
 }

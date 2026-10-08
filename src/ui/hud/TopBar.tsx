@@ -1,5 +1,6 @@
 import { levelFromXp } from '../../logic/progression'
 import { barnUsed, useGame } from '../../state/gameStore'
+import { useWorld } from '../../state/worldStore'
 import { formatNumber } from '../format'
 
 export function TopBar() {
@@ -7,6 +8,8 @@ export function TopBar() {
   const used = useGame((s) => barnUsed(s.inventory))
   const capacity = useGame((s) => s.barnCapacity)
   const setBarnOpen = useGame((s) => s.setBarnOpen)
+  const goHome = useGame((s) => s.goHome)
+  const setNeighboursOpen = useWorld((s) => s.setNeighboursOpen)
   if (!profile) return null
 
   const { xpInLevel, xpNeeded } = levelFromXp(profile.xp)
@@ -28,12 +31,20 @@ export function TopBar() {
           </div>
         </div>
       </div>
-      <button
-        className="pointer-events-auto min-h-11 rounded-full bg-white/90 px-4 font-bold shadow active:scale-95"
-        onClick={() => setBarnOpen(true)}
-      >
-        Kho {used}/{capacity}
-      </button>
+      <div className="pointer-events-auto flex flex-col items-end gap-2">
+        <button className="min-h-11 rounded-full bg-white/90 px-4 font-bold shadow active:scale-95" onClick={() => setBarnOpen(true)}>
+          Kho {used}/{capacity}
+        </button>
+        <button className="min-h-11 rounded-full bg-white/90 px-4 text-sm font-bold shadow active:scale-95" onClick={goHome}>
+          Về nhà
+        </button>
+        <button
+          className="min-h-11 rounded-full bg-white/90 px-4 text-sm font-bold shadow active:scale-95"
+          onClick={() => setNeighboursOpen(true)}
+        >
+          Hàng xóm
+        </button>
+      </div>
     </div>
   )
 }

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { CROP_VISUALS, DEFAULT_CROP_VISUAL, type CropVisual } from '../game/data/cropVisuals'
 import { api } from '../services/api'
 
-// Game config loaded from the database (items + crops tables), merged with how crops look.
+// Game config loaded from the database (game_config, items, crops), merged with how crops look.
 
 export interface CropDef extends CropVisual {
   id: string
@@ -18,6 +18,7 @@ export interface CropDef extends CropVisual {
 interface CatalogState {
   crops: CropDef[]
   cropsById: Record<string, CropDef>
+  houseMaxParcels: number[]
   loaded: boolean
   load: () => Promise<void>
 }
@@ -25,11 +26,12 @@ interface CatalogState {
 export const useCatalog = create<CatalogState>((set, get) => ({
   crops: [],
   cropsById: {},
+  houseMaxParcels: [3, 6, 10, 16, 25],
   loaded: false,
 
   load: async () => {
     if (get().loaded) return
-    const rows = await api.loadCrops()
+    const [rows, config] = await Promise.all([api.loadCrops(), api.loadConfig()])
     const crops = rows
       .map(
         (r): CropDef => ({
@@ -45,6 +47,7 @@ export const useCatalog = create<CatalogState>((set, get) => ({
         }),
       )
       .sort((a, b) => a.unlockLevel - b.unlockLevel)
-    set({ crops, cropsById: Object.fromEntries(crops.map((c) => [c.id, c])), loaded: true })
+    const houseMaxParcels = Array.isArray(config.house_max_parcels) ? (config.house_max_parcels as number[]) : get().houseMaxParcels
+    set({ crops, cropsById: Object.fromEntries(crops.map((c) => [c.id, c])), houseMaxParcels, loaded: true })
   },
 }))
